@@ -1,0 +1,113 @@
+{
+ "name": "auramantra-reel",
+ "format": "Instagram Reel, 9:16, 1080x1920, 30 fps",
+ "duration": 24.5,
+ "brand": {
+  "name": "AURAMANTRA",
+  "sub": "massage point",
+  "line": "balinéz · thai · lomi lomi",
+  "where": "Budapest, X. ker.",
+  "cta": "Időpontfoglalás DM-ben"
+ },
+ "chapters": [
+  {
+   "t": 0,
+   "title": "The week"
+  },
+  {
+   "t": 4.6,
+   "title": "The warm window"
+  },
+  {
+   "t": 8.0,
+   "title": "The knots"
+  },
+  {
+   "t": 13.0,
+   "title": "Lomi lomi"
+  },
+  {
+   "t": 17.2,
+   "title": "Home, light"
+  },
+  {
+   "t": 20.4,
+   "title": "The point"
+  }
+ ],
+ "cards": [
+  {
+   "t0": 0.15,
+   "t1": 4.5,
+   "text": "Egész héten cipelted."
+  },
+  {
+   "t0": 4.8,
+   "t1": 8.1,
+   "text": "Itt leteheted."
+  },
+  {
+   "t0": 8.9,
+   "t1": 13.0,
+   "text": "Kioldódnak a csomók."
+  },
+  {
+   "t0": 13.5,
+   "t1": 17.2,
+   "text": "Csak rád szabva."
+  },
+  {
+   "t0": 17.7,
+   "t1": 20.6,
+   "text": "Pihekönnyen haza."
+  }
+ ],
+ "events": {
+  "card": [
+   0.15,
+   4.8,
+   8.9,
+   13.5,
+   17.7
+  ],
+  "cardOut": [
+   4.5,
+   8.1,
+   13.0,
+   17.2,
+   20.6
+  ],
+  "tram": 0.6,
+  "alarm": 1.6,
+  "sheetSlip": 2.7,
+  "glimpse": 3.6,
+  "arrive": 4.7,
+  "setDown": 5.1,
+  "butterflies": 5.3,
+  "rainStop": 5.9,
+  "doorOpen": 6.9,
+  "walkIn": 7.45,
+  "doorClose": 7.9,
+  "travel1": 8.05,
+  "knotIn": 9.6,
+  "untie": [
+   10.4,
+   12.2
+  ],
+  "knotOut": 12.9,
+  "oil": 13.3,
+  "drop": 13.75,
+  "waves": [
+   14.4,
+   15.4,
+   16.4
+  ],
+  "exit": 17.3,
+  "stretch": 5.6,
+  "pull": 20.4,
+  "lotus": 21.3,
+  "logo": 22.0,
+  "end": 24.5,
+  "walk2": 6.1
+ }
+}
