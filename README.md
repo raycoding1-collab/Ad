@@ -30,7 +30,8 @@ python3 -m http.server 8765 &                         # the stage
 python3 tools/timeline.py film/film.json              # script times -> src/timeline.js
 node tools/events.mjs                                 # the picture's paper flaps and footsteps -> .cache/events.json
 /home/user/tts/venv/bin/python tools/build_audio.py   # score, ambience, effects -> .cache/film.wav
-node tools/render.mjs out/auramantra_reel.mp4 30      # every frame at 1080x1920, muxed with the sound
+node tools/render_fast.mjs                            # 4 browsers in parallel, ~3 min for the whole reel
+node tools/render_fast.mjs 8.5 17.5                   # after an edit: redraw only those seconds, re-encode (~1-2 min)
 ```
 
 `index.html?t=SECONDS` freezes one frame; `?play&from=SECONDS` previews silently in real time.
