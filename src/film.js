@@ -30,7 +30,8 @@ const por = (st) => st.aspectK < 0.4; // the reel is upright; the page also work
 // --------------------------------------------------------------- places ---
 const A_HOUSE = 36, A_DOOR = A_HOUSE + (HOUSE.door[0] + HOUSE.door[1]) / 2 / 17.45, A_WIN = A_HOUSE + (HOUSE.win[0] + HOUSE.win[2]) / 2 / 17.45;
 const A_STOP = A_HOUSE - 7.0, A_STACK = A_STOP - 2.6;
-const A_ROOM = 58, A_OUT = 74;
+const A_ROOM = 58, A_EDGE = A_ROOM + 8.6; // the room, and its right-hand side where the world begins again
+const WAVE = 9; // how fast each wave of colour rolls out over the world, degrees a second
 const T = {
   arrive: ev('arrive', 4.7), setDown: ev('setDown', 5.1), walk2: ev('walk2', 6.1), doorOpen: ev('doorOpen', 6.9), walkIn: ev('walkIn', 7.45), doorClose: ev('doorClose', 7.9),
   travel1: ev('travel1', 8), knotIn: ev('knotIn', 9.6), untie: ev('untie', [10.4, 12.2]), knotOut: ev('knotOut', 12.9),
@@ -42,35 +43,43 @@ const cam = monotone([
   // the week: walking with her through the rain
   [0, A_STOP - 4.7 * 4 - 0.3], [T.arrive, A_STOP - 0.2], [T.walk2, A_STOP + 1.6], [T.walkIn, A_DOOR - 1.6], [8.05, A_DOOR - 1.1],
   // inside: the room
-  [8.75, A_ROOM - 1], [12.9, A_ROOM + 0.4], [13.6, A_ROOM + 1], [16.8, A_ROOM + 4],
-  // home, light
-  [18, A_OUT - 4], [20.4, A_OUT + 4], [24.5, A_OUT + 9], [40, A_OUT + 20],
+  [8.75, A_ROOM - 0.6], [12.9, A_ROOM + 0.2], [13.6, A_ROOM + 0.3], [14.3, A_ROOM + 1.2], [15.4, A_ROOM + 6.5], [16.8, A_ROOM + 8],
+  // home, light, and the whole planet
+  [17.3, A_ROOM + 8.6], [20.4, A_ROOM + 12.4], [25.5, A_ROOM + 13.6], [40, A_ROOM + 20],
 ]);
 // how close the camera is: close on her for the hook, back a little for the house, close in the room
-const zoomK = track([[0, 1.82], [3.4, 1.74], [4.8, 1.5], [6.2, 1.42], [7.6, 1.5], [8.05, 1.52], [8.7, 1.62], [12.9, 1.72], [13.6, 1.6], [16.8, 1.3], [17.6, 1.5], [20.4, 1.4]]);
+const zoomK = track([[0, 2.55], [3.4, 2.4], [4.8, 1.86], [6.2, 1.74], [7.6, 1.95], [8.05, 2.1], [8.75, 3.35], [12.9, 3.5], [13.5, 3.6], [14.3, 3.0], [15.4, 1.85], [16.8, 1.8], [17.4, 2.2], [20.4, 2.05]]);
 
 // ------------------------------------------------- paint and shape of land --
 // The grey street, the house, the room, and the world beyond that gets its colour back.
 const GREY = [104, 104, 106], STREET = [92, 92, 98], BLOOMG = [150, 168, 104];
 let NOW = 0; // film time, for the ground's colour coming back
-const bloomK = (a, t) => { // how much colour has come back at angle a: the waves roll outwards from the room
+// Each layer turns at its own speed, so each has its own line where the colour starts: chosen so that
+// all three meet at the top of the planet when it is seen whole.
+const SPLIT = { main: A_EDGE, front: A_EDGE, core: A_EDGE, mid: A_ROOM + 13, far: A_ROOM + 18.5 };
+const waveAt = (i, a, A0) => T.waves[i] + Math.max(0, a - A0) / WAVE; // when wave i reaches angle a
+const bloomK = (a, t, A0 = A_EDGE) => { // how much colour has come back at angle a
+  if (a < A0 - 1) return 0;
   let k = 0;
-  T.waves.forEach((tw, i) => { const reach = (t - tw) * 26; k = Math.max(k, (i + 1) / 3 * sramp(reach - (a - A_ROOM - 6), 0, 6)); });
-  return k * sramp(a, A_ROOM + 4, A_ROOM + 9);
+  T.waves.forEach((tw, i) => { const reach = (t - tw) * WAVE; k = Math.max(k, (0.45 + 0.55 * i / 2) * sramp(reach - (a - A0), -0.5, 2.5)); });
+  // whatever the waves have not reached by the time we pull back comes in with the pull
+  k = Math.max(k, sramp(t, T.pull + 0.4 + Math.max(0, a - A0) * 0.004, T.pull + 2.2 + Math.max(0, a - A0) * 0.004));
+  return k * sramp(a, A0 - 1, A0 + 1);
 };
 function ground(layer, a) {
-  const city = a < A_HOUSE + 9, c0 = city ? STREET : mix(GREY, [130, 120, 108], sramp(a, A_ROOM - 10, A_ROOM)), k = city ? 0 : bloomK(a, NOW);
-  const c = mix(c0, mix(BLOOMG, [176, 160, 110], 0.5 + 0.5 * noise(a * 0.2, 4)), k);
+  const A0 = SPLIT[layer], k = bloomK(a, NOW, A0);
+  const c0 = a < A_HOUSE + 9 ? STREET : mix(GREY, [120, 112, 104], sramp(a, A_ROOM - 10, A_ROOM) * (1 - sramp(a, A_EDGE, A_EDGE + 2)));
+  const c = mix(c0, mix(BLOOMG, [184, 168, 112], 0.5 + 0.5 * noise(a * 0.2, 4)), k);
   if (layer === 'main') return c;
-  if (layer === 'mid') return mix(shade(c, 0.05), [150, 152, 160], city ? 0.22 : 0.12 * (1 - k));
-  if (layer === 'far') return mix(c, [150, 154, 166], city ? 0.5 : 0.4 - 0.2 * k);
+  if (layer === 'mid') return mix(shade(c, 0.05), [150, 152, 160], 0.22 * (1 - k) + 0.06);
+  if (layer === 'far') return mix(c, [150, 154, 166], 0.5 - 0.25 * k);
   if (layer === 'front') return shade(c, -0.36);
   return shade(c, -0.55);
 }
 const profile = {
-  far: (a) => noise(a * 0.11, 5) * 10 + 14 + sramp(a, A_ROOM, A_ROOM + 20) * (Math.abs(noise(a * 0.3, 41)) * 40 + 10),
-  mid: (a) => noise(a * 0.33, 3) * 3 + sramp(a, A_ROOM + 6, A_ROOM + 18) * (noise(a * 0.2, 9) * 14 + 10),
-  main: (a) => noise(a * 0.9, 1) * 0.8 + sramp(a, A_ROOM + 10, A_ROOM + 20) * noise(a * 0.21, 2) * 3,
+  far: (a) => noise(a * 0.11, 5) * 10 + 14 + sramp(a, SPLIT.far, SPLIT.far + 10) * (Math.abs(noise(a * 0.3, 41)) * 50 + 14),
+  mid: (a) => noise(a * 0.33, 3) * 3 + sramp(a, SPLIT.mid, SPLIT.mid + 8) * (noise(a * 0.2, 9) * 14 + 12),
+  main: (a) => noise(a * 0.9, 1) * 0.8 + sramp(a, A_EDGE + 3, A_EDGE + 12) * noise(a * 0.21, 2) * 3,
   front: (a) => noise(a * 0.5, 7) * 4 + noise(a * 0.13, 17) * 6,
   core: (a) => noise(a * 0.2, 8) * 8,
 };
@@ -114,9 +123,8 @@ const walking = (t) => t < T.arrive - 0.05 || (t > T.walk2 && t < T.walkIn + 0.2
   for (let a = 4; a < 60; a += 7.2) add('au_tpole', 'mid', a, { z: 2, scale: 0.9, span: 7.2 });
   add('au_tram', 'mid', 40, { z: 3, scale: 0.72, popAt: -3, move: (t) => -clamp((t - ev('tram', 0.6)) * 4.6, 0, 30), wide: 20, to: 7.5 });
   // they pass behind her, going the other way (each leaves the street before the house)
-  add('au_brolly', 'main', 19.5, { v: 'auBrollyA', z: 1.2, flip: true, scale: 1.08, pace: 5.4, move: (t) => -clamp(t * 1.5, 0, 9), to: 6 });
-  add('au_brolly', 'main', 26.5, { v: 'auBrollyB', z: 1.2, flip: true, scale: 1.02, pace: 5.0, move: (t) => -clamp(t * 1.3, 0, 8), to: 7 });
-  add('au_brolly', 'mid', 18, { v: 'auBrollyC', z: 3.5, flip: true, scale: 0.8, pace: 5.2, move: (t) => -clamp(t * 1.1, 0, 7), to: 7 });
+  add('au_brolly', 'mid', 21, { v: 'auBrollyA', z: 3.4, flip: true, scale: 0.86, pace: 5.4, move: (t) => -clamp(t * 1.2, 0, 8), to: 7 });
+  add('au_brolly', 'mid', 12.5, { v: 'auBrollyC', z: 3.5, flip: true, scale: 0.82, pace: 5.2, move: (t) => -clamp(t * 1.1, 0, 7), to: 7 });
   // Budapest behind: blocks of flats near, the city and the church spire far
   for (const [a, v, s] of [[2, 0, 0.78], [10.5, 3, 0.74], [17.5, 1, 0.82], [25, 2, 0.74], [33.5, 4, 0.7], [44, 5, 0.8], [51, 0, 0.72]]) add('au_block', 'mid', a, { v, z: 0, scale: s, lit: 0.22 });
   for (const [a, v, s] of [[-6, 4, 0.55], [6, 1, 0.6], [16, 5, 0.5], [30, 3, 0.56], [44, 0, 0.5], [56, 2, 0.6]]) add('au_block', 'far', a, { v, z: 0, scale: s, lit: 0.12 });
@@ -180,7 +188,7 @@ hook({
       const [x0, y0] = st.place('main', A_STACK + b.dx, 230 * 1.15, t);
       const x = x0 + (b.vx * age * 60 + Math.sin(age * 2.2 + b.ph) * 26 + age * age * 26) * pu * 1.6, y = y0 - (b.vy * age * 90 - Math.sin(age * 3 + b.ph) * 14) * pu * 1.4;
       if (y < -40 || x > st.W + 60) continue;
-      const fold = clamp(age / 0.45), s = b.s * pu * 2.4 * lerp(1.4, 1, fold);
+      const fold = clamp(age / 0.45), s = b.s * pu * 3.6 * lerp(1.4, 1, fold);
       if (fold < 1) { g.save(); g.translate(x, y); g.rotate(age * 6 + b.ph); g.fillStyle = '#f2ead8'; g.globalAlpha = 1 - fold; g.fillRect(-s * 4, -s * 5, s * 8, s * 10); g.restore(); g.globalAlpha = 1; }
       butterfly(g, x, y, s, Math.sin(age * 13 + b.ph), b.col, Math.sin(age * 1.7 + b.ph) * 0.4);
     }
@@ -188,13 +196,328 @@ hook({
 });
 
 // ===================================================== 3. The knots ===
-// (built next)
+// Inside, warm: candlelight, the paper lamp, the rain on the window. She lies face down; the practitioner,
+// behind the table, works at the knot on her shoulder until it comes loose. Up close, it is drawn out
+// into one smooth thread.
+const untieK = (t) => sramp(t, T.untie[0], T.untie[1]); // 0 knotted .. 1 undone
+const stroke = (t) => { // which long stroke is under way, and how far along: { i, s } (s in 0..1 out, then back)
+  for (let i = T.waves.length - 1; i >= 0; i--) { const d = t - (T.waves[i] - 0.45); if (d >= 0 && d < 1) return { i, s: d }; }
+  return null;
+};
+{
+  add('au_room', 'main', A_ROOM, { z: 0.5, wide: 12, loud: 0.8, warm: () => 1, day: (t) => sramp(t, T.waves[0] + 0.3, T.waves[0] + 1.2) });
+  add('au_couch', 'main', A_ROOM, {
+    z: 1, wide: 8, loud: 0.6,
+    client: (t) => 1 - sramp(t, T.exit - 0.45, T.exit - 0.1),
+    knot: (t) => ({ k: 1 - untieK(t), show: 1 - sramp(t, T.untie[1] + 0.2, T.untie[1] + 0.9) }),
+    pract: (t) => {
+      // the stroke: she walks along the table with it, forearms gliding from the shoulders down the back
+      const st = stroke(t);
+      if (st) {
+        const out = st.s < 0.72, s = out ? smooth(st.s / 0.72) : 1 - smooth((st.s - 0.72) / 0.28);
+        const px = lerp(-40, -6, s), lift = out ? 0 : Math.sin(Math.PI * (st.s - 0.72) / 0.28) * 6;
+        return { px, lean: 22 + 10 * Math.sin(Math.PI * clamp(st.s / 0.72)), head: 18, hands: [[lerp(-30, 10, s), -86 - lift], [lerp(-38, 2, s), -85 - lift]] };
+      }
+      if (t > T.oil - 0.3 && t < T.waves[0] - 0.45) { // cupped hands for the oil, then warming it between the palms
+        const rub = sramp(t, T.drop + 0.15, T.drop + 0.3) * Math.sin(t * 22) * 2.2;
+        const k = sramp(t, T.oil - 0.3, T.oil + 0.1) * (1 - sramp(t, T.waves[0] - 0.75, T.waves[0] - 0.45));
+        return { px: -34, lean: lerp(18, 6, k), head: lerp(18, 28, k), hands: [[lerp(-30, -32 + rub, k), lerp(-86, -100, k)], [lerp(-38, -36 - rub, k), lerp(-85, -99, k)]] };
+      }
+      if (t > T.exit - 0.5) { const k = sramp(t, T.exit - 0.5, T.exit); return { px: lerp(-6, -24, k), lean: lerp(22, 2, k), head: 4, hands: [[lerp(10, -22, k), lerp(-86, -60, k)], [lerp(2, -34, k), lerp(-85, -60, k)]] }; }
+      // kneading the knot: small slow circles, then easing off as it gives
+      const w = t * 3.4, a = 1 - untieK(t) * 0.6;
+      return { px: -40, lean: 14, head: 22, hands: [[-22 + Math.cos(w) * 3 * a, -86 + Math.sin(w) * 1.6 * a], [-32 + Math.cos(w + 3) * 3 * a, -85 + Math.sin(w + 3) * 1.6 * a]] };
+    },
+  });
+  hook({
+    lights(t, c, L) {
+      if (t < 7.6 || t > T.pull + 3) return;
+      L.push({ a: A_ROOM - 0.6, h: 176, r: 520, k: 0.9 * (0.93 + 0.07 * fbm(t * 2, 7)), color: [255, 196, 130] });
+      L.push({ a: A_ROOM + 4.8, h: 76, r: 260, k: 0.8 * flick(t, 9), color: [255, 170, 90] });
+      // the oil's warmth spreading through the room
+      const pulse = Math.exp(-(((t - T.drop - 0.5) / 0.6) ** 2));
+      L.push({ a: A_ROOM - 2, h: 100, r: 400 + 400 * pulse, k: 0.9 * pulse, color: [255, 200, 120] });
+    },
+  });
+}
+// The close-up: shoulders seen from above on a card; the red knot; two hands working it loose.
+const KNOT_FX = { key: '', back: null, hand: null };
+function knotSprites(st) {
+  const key = st.W + 'x' + st.H; if (KNOT_FX.key === key) return KNOT_FX;
+  for (const s of [KNOT_FX.back, KNOT_FX.hand]) if (s) { release(s.img); release(s.shadow); }
+  const sc = st.W / 600, cw = 500, ch = 380, skin = '#d2a07a';
+  const sh = new BlurSheet('knot-back', [-cw / 2, -ch / 2, cw / 2, ch / 2], sc, { pad: 16 }, 0);
+  sh.piece([[-cw / 2, -ch / 2 + 6], [0, -ch / 2], [cw / 2, -ch / 2 + 4], [cw / 2 - 3, ch / 2], [0, ch / 2 - 2], [-cw / 2 + 2, ch / 2]], '#efe4cf', { round: 6, rough: 1.2, seg: 70, lift: 3, thick: 2.4 });
+  // the upper back from above: neck, the slope of the shoulders, shoulder blades, the line of the spine
+  sh.piece([[-34, -ch / 2 + 22], [34, -ch / 2 + 22], [40, -112], [150, -86], [208, -40], [222, 30], [214, ch / 2 - 20], [-214, ch / 2 - 20], [-222, 30], [-208, -40], [-150, -86], [-40, -112]], skin, { round: 22, rough: 1.4, seg: 30, lift: 2.6, paint: (g) => {
+    const gr = g.createRadialGradient(0, -40, 20, 0, -20, 260); gr.addColorStop(0, 'rgba(255,230,200,.25)'); gr.addColorStop(1, 'rgba(120,70,40,.3)'); g.fillStyle = gr; g.fillRect(-cw / 2, -ch / 2, cw, ch);
+    g.strokeStyle = 'rgba(130,80,50,.35)'; g.lineWidth = 2.2; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(0, -100); g.quadraticCurveTo(4, 40, 0, ch / 2 - 24); g.stroke();
+    for (const s of [-1, 1]) { g.beginPath(); g.moveTo(s * 40, -60); g.quadraticCurveTo(s * 110, -70, s * 120, 10); g.quadraticCurveTo(s * 100, 60, s * 50, 70); g.stroke(); }
+  } });
+  sh.piece([[-cw / 2 + 6, ch / 2 - 40], [cw / 2 - 6, ch / 2 - 46], [cw / 2 - 4, ch / 2 - 4], [-cw / 2 + 4, ch / 2 - 2]], '#f6f1e6', { round: 4, lift: 2.2, paint: (g) => { g.strokeStyle = 'rgba(150,140,120,.3)'; g.lineWidth = 1; for (let x = -cw / 2 + 20; x < cw / 2; x += 18) { g.beginPath(); g.moveTo(x, ch / 2 - 40); g.lineTo(x + 4, ch / 2); g.stroke(); } } });
+  KNOT_FX.back = { ...sh.finish({ shadowBlur: 10 }), cw, ch, sc };
+  // a hand, palm down, fingers up
+  const hs = new BlurSheet('knot-hand', [-48, -110, 40, 200], sc, { pad: 10 }, 0), hc = '#a8724c';
+  hs.piece([[-30, 200], [30, 200], [27, 30], [-27, 30]], '#d8cfbd', { round: 6, lift: 0, paint: (g) => { g.strokeStyle = 'rgba(150,130,100,.35)'; g.lineWidth = 1.4; for (let x = -18; x < 20; x += 12) { g.beginPath(); g.moveTo(x, 40); g.lineTo(x + 3, 200); g.stroke(); } } });
+  hs.piece([[-24, 34], [24, 34], [27, -20], [-27, -20]], hc, { round: 12, lift: 1.6 });
+  [[-19, -26, -84, 8.6], [-6.5, -26, -100, 9], [6.5, -26, -96, 9], [19, -24, -74, 8]].forEach(([x, y0, y1, w]) => hs.piece([[x - w / 2, y0], [x + w / 2, y0], [x + w / 2 - 0.5, y1 + 4], [x, y1], [x - w / 2 + 0.5, y1 + 4]], hc, { round: 4.2, lift: 1.4, paint: (g) => { g.fillStyle = 'rgba(255,220,200,.35)'; g.beginPath(); g.ellipse(x, y1 + 6, w * 0.32, 4, 0, 0, 7); g.fill(); } }));
+  hs.piece([[-24, 8], [-30, -2], [-46, -30], [-42, -36], [-24, -18], [-16, -6]], hc, { round: 5, lift: 1.6 });
+  KNOT_FX.hand = hs.finish({ shadowBlur: 5 });
+  KNOT_FX.key = key; return KNOT_FX;
+}
+function knotCard(g, st, t) {
+  const k = sramp(t, T.knotIn - 0.1, T.knotIn + 0.5) * (1 - sramp(t, T.knotOut - 0.4, T.knotOut + 0.1)); if (k < 0.01) return;
+  const { W, H } = st, F = knotSprites(st), B = F.back, sc = B.sc;
+  // the room's own light behind it: dimmed, warm, with the candles still glowing at the edges
+  g.fillStyle = `rgba(26,14,10,${0.58 * k})`; g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 9; i++) { const x = W * hash(i * 7 + 1), y = H * (0.25 + 0.6 * hash(i * 3 + 2)), f = 0.6 + 0.4 * Math.sin(t * (1 + hash(i)) + i); st.stamp(g, st.dot(255, 170, 90), x, y, W * (0.03 + 0.04 * hash(i * 5)), 0.35 * k * f); }
+  g.globalCompositeOperation = 'source-over';
+  const rise = drop(t, T.knotIn, T.knotOut - 0.35), cx = W * 0.5, cy = lerp(H * 1.25, H * 0.5, clamp(rise)) + (rise > 1 ? (rise - 1) * -H * 0.05 : 0);
+  g.save(); g.translate(cx, cy); g.rotate(Math.sin(t * 0.8) * 0.8 * DEG); g.scale(sc, sc);
+  put(g, B, 0.35, 6, 10);
+  // the knot on the left shoulder, coming loose and drawn out to one smooth line
+  const u = untieK(t), kx = -96, ky = -30;
+  g.save(); g.translate(kx, ky);
+  tangle(g, lerp(0, 96, smooth(u)), 0, 46, 380 * smooth(u), 1 - u, t, 7, 7, 1);
+  g.restore();
+  // the hands: pressing, small circles; as it gives they slide out along the thread and lift away
+  const ease = smooth(clamp((u - 0.15) / 0.85)), lift = sramp(t, T.untie[1] - 0.4, T.untie[1] + 0.4), w = t * 3.4;
+  for (const [side, ph] of [[-1, 0], [1, 3]]) {
+    const press = 1 - 0.03 * Math.max(0, Math.sin(w + ph)) * (1 - ease);
+    const hx = kx + side * (50 + ease * 120) + Math.cos(w + ph) * 6 * (1 - ease), hy = ky - 34 + Math.sin(w + ph) * 4 * (1 - ease) - lift * 30;
+    g.save(); g.translate(hx, hy); g.rotate((180 - side * (22 - ease * 12)) * DEG); g.scale(press * (1 + lift * 0.12), press * (1 + lift * 0.12)); g.globalAlpha = 1 - lift;
+    put(g, F.hand, 0.3 + lift * 0.3, 4 + lift * 10, 6 + lift * 14);
+    g.restore();
+  }
+  g.restore();
+}
+hook({ over(g, st, t) { knotCard(g, st, t); } });
 
 // ===================================================== 4. Lomi lomi ===
-// (built next)
+// A drop of warm oil falls into her palms, and a warm ring goes out from it: an aura. Then three long,
+// flowing strokes, and with each one a wave rolls out of the room and the world gets its colour back.
+hook({
+  over(g, st, t) {
+    if (t < T.oil - 0.1 || t > T.drop + 1.8) return;
+    const { W, H } = st, [hx, hy] = st.place('main', A_ROOM + (-34 + 0) / 17.45, 100, t), pu = Math.max(st.eu, Math.min(W, H) / 820);
+    // the drop: a bead of amber light, falling
+    if (t < T.drop) {
+      const k = clamp((t - T.oil) / (T.drop - T.oil)), y = lerp(-H * 0.04, hy, k * k), s = 6 * pu;
+      g.globalCompositeOperation = 'lighter'; st.stamp(g, st.dot(255, 190, 90, '255,240,200'), hx, y, s * 6, 0.8); g.globalCompositeOperation = 'source-over';
+      g.save(); g.translate(hx, y); g.scale(s, s * (1 + k * 0.3));
+      g.fillStyle = '#d9902c'; g.beginPath(); g.moveTo(0, -3.2); g.bezierCurveTo(1.6, -1, 2.2, 0.6, 2.2, 1.3); g.arc(0, 1.3, 2.2, 0, Math.PI); g.bezierCurveTo(-2.2, 0.6, -1.6, -1, 0, -3.2); g.fill();
+      g.fillStyle = 'rgba(255,240,200,.85)'; g.beginPath(); g.ellipse(-0.7, 0.6, 0.5, 0.9, -0.3, 0, 7); g.fill();
+      g.restore();
+    }
+    // the aura: warm rings going out from her hands, through the room and beyond the frame
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 3; i++) {
+      const a = t - T.drop - i * 0.22; if (a < 0 || a > 1.5) continue;
+      const r = (a / 1.5) ** 0.7 * H * 0.9, al = (1 - a / 1.5) ** 1.6 * (0.5 - i * 0.12);
+      const gr = g.createRadialGradient(hx, hy, Math.max(0, r - 40 * pu), hx, hy, r + 10 * pu);
+      gr.addColorStop(0, 'rgba(255,190,100,0)'); gr.addColorStop(0.7, `rgba(255,200,120,${al})`); gr.addColorStop(1, 'rgba(255,190,100,0)');
+      g.fillStyle = gr; g.fillRect(hx - r - 20, hy - r - 20, (r + 20) * 2, (r + 20) * 2);
+    }
+    const flash = Math.exp(-(((t - T.drop) / 0.12) ** 2));
+    st.stamp(g, st.dot(255, 214, 140, '255,250,230'), hx, hy, 40 * pu, flash * 0.9);
+    g.globalCompositeOperation = 'source-over';
+  },
+  // the waves: layered paper rolling along the ground, out of the room and across the grey
+  ground(g, st, t, S, G) {
+    const COL = [['#e9b26a', '#f6d7a2'], ['#e48f9a', '#f6c4c8'], ['#a993cc', '#d8cdea']];
+    T.waves.forEach((tw, i) => {
+      const age = t - tw; if (age < 0 || age > 9) return;
+      const front = A_EDGE - 1.5 + age * WAVE, len = 9, h0 = 64;
+      if (front - len > G.c + st.visE + 6 || front < G.c - st.visE - 6) return;
+      const fade = 1 - sramp(age, 6, 9);
+      for (const [lay, dh, col, al] of [[0, 0, COL[i][0], 0.9], [1, -16, COL[i][1], 0.95], [2, -34, '#fbf4ea', 0.9]]) {
+        g.fillStyle = col; g.globalAlpha = al * fade; g.beginPath();
+        const steps = 40;
+        for (let j = 0; j <= steps; j++) { const q = j / steps, a = front - len + q * len, hh = (h0 + dh) * Math.sin(Math.PI * Math.min(1, q * 1.15)) ** 1.5 * (0.85 + 0.15 * Math.sin(q * 9 - t * 6)); const [x, y] = G.rad(a, hh); j ? g.lineTo(x, y) : g.moveTo(x, y); }
+        // the curl at the front
+        const [cx, cy] = G.rad(front + 0.2, (h0 + dh) * 0.55), rr = (h0 + dh) * 0.45;
+        g.arc(cx, cy, rr, -Math.PI * 0.9 + (front - G.c) * DEG, Math.PI * 0.5 + (front - G.c) * DEG);
+        for (let j = steps; j >= 0; j--) { const a = front - len + (j / steps) * len, [x, y] = G.rad(a, -4); g.lineTo(x, y); }
+        g.closePath(); g.fill();
+      }
+      g.globalAlpha = 0.8 * fade; g.strokeStyle = 'rgba(255,250,240,.95)'; g.lineWidth = 3.2; g.beginPath();
+      for (let j = 0; j <= 30; j++) { const q = j / 30, a = front - len * 0.9 + q * len * 0.9, hh = (h0 - 4) * Math.sin(Math.PI * Math.min(1, q * 1.1)) ** 1.5; const [x, y] = G.rad(a, hh); j ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.stroke(); g.globalAlpha = 1;
+    });
+  },
+});
 
 // ===================================================== 5. Home, light ===
-// (built next)
+// The world the waves have reached: a meadow in the colours they brought, blossom, and a soft hill line.
+{
+  const popFor = (a, i, A0 = A_EDGE) => Math.min(waveAt(i, a, A0) + 0.15 + R() * 0.25, T.pull + 0.5 + Math.max(0, a - A0) * 0.006 + R() * 0.6);
+  // flowers on the main ground: each wave brings its own colours
+  for (let a = A_EDGE + 1.2; a < A_ROOM + 125; a += (a < A_ROOM + 40 ? 1.05 : 3.2) * (0.7 + R() * 0.6)) {
+    const i = (R() * 3) | 0, col = [0, 1, 2, 3, 4, 5][i * 2 + ((R() * 2) | 0)];
+    add('au_flower', 'main', a, { v: col * 4 + ((R() * 4) | 0), z: 1.5 + R(), scale: 0.95 + R() * 0.6, flip: R() < 0.5, popAt: popFor(a, i), loud: 0.35 });
+  }
+  for (let a = A_EDGE + 0.6; a < A_ROOM + 125; a += 2.2 * (0.7 + R() * 0.8)) add('grass', 'main', a, { v: (R() * 6) | 0, z: R() < 0.5 ? 1 : 3, flip: R() < 0.5, scale: 0.9 + R() * 0.5, popAt: popFor(a, 0), loud: 0.15 });
+  // blossom trees and green trees, near and far
+  for (const [a, v, s, i] of [[A_EDGE + 9, 0, 1.0, 1], [A_EDGE + 19, 1, 1.1, 1], [A_EDGE + 31, 2, 0.95, 2], [A_ROOM + 62, 0, 1, 2], [A_ROOM + 90, 1, 1, 2]]) add('apricot', 'main', a, { v, z: 0.8, scale: s, popAt: popFor(a, i), loud: 0.7 });
+  for (let a = SPLIT.mid + 1; a < A_ROOM + 190; a += 5 + R() * 6) add(R() < 0.55 ? 'apricot' : 'oak', 'mid', a, { v: (R() * 3) | 0, z: 0.5, scale: 0.55 + R() * 0.2, popAt: popFor(a, 1, SPLIT.mid), loud: 0.3 });
+  for (let a = SPLIT.far + 1; a < A_ROOM + 250; a += 7 + R() * 8) add('oak', 'far', a, { v: (R() * 3) | 0, z: 0.5, scale: 0.5 + R() * 0.2, popAt: popFor(a, 2, SPLIT.far), loud: 0.15 });
+  for (let a = A_EDGE + 2; a < A_ROOM + 80; a += 3 + R() * 3) add('au_flower', 'front', a, { v: ((R() * 6) | 0) * 4 + ((R() * 4) | 0), z: 1, scale: 1.8 + R() * 0.6, popAt: popFor(a, (R() * 3) | 0), loud: 0.2 });
+  // the grey side goes on round the planet: more of the city, for when it is seen whole
+  for (let a = -6; a > -54; a -= 7 + R() * 4) add('au_block', 'mid', a, { v: (R() * 6) | 0, z: 0, scale: 0.7 + R() * 0.12, lit: 0.2 });
+  for (let a = -14; a > -115; a -= 9 + R() * 6) add('au_block', 'far', a, { v: (R() * 6) | 0, z: 0, scale: 0.5 + R() * 0.1, lit: 0.12 });
+  for (let a = -10; a > -60; a -= 6 + R() * 5) add('au_hedge', 'front', a, { v: (R() * 3) | 0, z: 1, scale: 0.9 + R() * 0.4 });
+
+  // she goes home light: quick, springy steps, the knot gone, and a little skip
+  const walk3 = monotone([[T.exit, A_EDGE - 0.6], [T.pull, A_ROOM + 13.2], [24.5, A_ROOM + 15], [30, A_ROOM + 15]]);
+  const SKIP = ev('stretch', 18.6);
+  add('au_her', 'main', 0, {
+    v: 'auHer', z: 2.2, scale: 1.15, from: T.exit - 0.05, popAt: T.exit, loud: 0.6, pace: 5.6,
+    move: (t) => walk3(clamp(t, T.exit, 30)),
+    lift: (t) => Math.abs(Math.sin(t * 5.6 + 0.4)) * 3.5 + Math.max(0, Math.sin(clamp((t - SKIP) / 0.55) * Math.PI)) * 22,
+    act: (t) => {
+      const ph = t * 5.6 + 0.4, sk = Math.sin(clamp((t - SKIP) / 0.55) * Math.PI);
+      return { walk: ph, lean: -2, head: -8 + Math.sin(t * 1.3) * 3, knot: 0, back: [Math.sin(ph) * 30 - sk * 120, -10 - sk * 30], front: [-Math.sin(ph) * 30 - sk * 140, -16 - sk * 20] };
+    },
+  });
+  hook({
+    lights(t, c, L) {
+      if (t < T.waves[0]) return;
+      for (const [i, tw] of T.waves.entries()) { const age = t - tw; if (age < 0 || age > 4) continue; L.push({ a: A_EDGE + age * WAVE - 1.5, h: 20, r: 260, k: 0.45 * (1 - age / 4), color: [[255, 200, 130], [255, 170, 170], [200, 180, 255]][i] }); }
+    },
+    // a few of the butterflies stay with her on the way home
+    over(g, st, t) {
+      if (t < T.exit + 0.3 || t > T.pull + 1) return;
+      const pu = Math.max(st.eu, Math.min(st.W, st.H) / 820), fade = sramp(t, T.exit + 0.3, T.exit + 1) * (1 - sramp(t, T.pull, T.pull + 1));
+      for (let i = 0; i < 4; i++) {
+        const [x0, y0] = st.place('main', walk3(clamp(t, T.exit, 30)) + 0.5, 150 + i * 22, t);
+        const x = x0 + Math.sin(t * (1.2 + i * 0.3) + i * 2) * 60 * pu + (i - 1.5) * 26 * pu, y = y0 + Math.cos(t * (1.6 + i * 0.2) + i) * 30 * pu;
+        g.globalAlpha = fade; butterfly(g, x, y, (0.9 + 0.15 * i) * pu * 2.3, Math.sin(t * 13 + i * 2), BUTTER[i].col, Math.sin(t * 1.7 + i) * 0.4); g.globalAlpha = 1;
+      }
+    },
+  });
+}
+
+// ===================================================== 6. The point ===
+// Pulled back, the little planet: half of it still grey and raining, half of it in bloom, and between
+// them one warm point. A paper lotus opens behind it and holds it, the way the logo holds its flower.
+// [angle from upright, length in planet radii]: long at the centre, short at the sides, so the crown stays in an upright frame
+const PETALS = [[-82, 1.22], [-60, 1.62], [-39, 2.02], [-19, 2.32], [0, 2.46], [19, 2.32], [39, 2.02], [60, 1.62], [82, 1.22]];
+const LOTUS_FX = { key: '', petal: null, small: null };
+function lotusSprites(st) {
+  const key = st.W + 'x' + st.H; if (LOTUS_FX.key === key) return LOTUS_FX;
+  for (const s of [LOTUS_FX.petal, LOTUS_FX.small]) if (s) { release(s.img); release(s.shadow); }
+  const sc = st.W / 600;
+  const petal = (name, len, wid, c0, c1) => {
+    const sh = new BlurSheet(name, [-wid, -len, wid, 6], sc, { pad: 12 }, 0), pts = [];
+    for (let i = 0; i <= 16; i++) { const q = i / 16, y = -q * len, x = wid * Math.sin(Math.PI * q ** 0.85) * (1 - 0.15 * q); pts.push([x, y]); }
+    for (let i = 15; i >= 1; i--) { const [x, y] = pts[i]; pts.push([-x, y]); }
+    sh.piece(pts, c0, { round: 4, rough: 0.8, seg: 30, lift: 2.4, thick: 2, paint: (g) => {
+      const gr = g.createLinearGradient(0, 0, 0, -len); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.55, 'rgba(255,240,230,.1)'); gr.addColorStop(1, c1); g.fillStyle = gr; g.fillRect(-wid, -len, wid * 2, len);
+      g.strokeStyle = 'rgba(160,110,100,.28)'; g.lineWidth = 1.2; for (const dx of [-0.35, 0, 0.35]) { g.beginPath(); g.moveTo(dx * wid * 0.3, -6); g.quadraticCurveTo(dx * wid * 0.9, -len * 0.5, dx * wid * 0.2, -len * 0.92); g.stroke(); }
+    } });
+    return sh.finish({ shadowBlur: 8 });
+  };
+  LOTUS_FX.petal = petal('lotus-petal', 300, 88, '#f6eee2', 'rgba(232,160,170,.75)');
+  LOTUS_FX.small = petal('lotus-small', 170, 60, '#f3e6d6', 'rgba(226,150,160,.7)');
+  LOTUS_FX.key = key; return LOTUS_FX;
+}
+const pullR = (st) => st.W * 0.36; // the planet's radius when seen whole
+function lotus(g, st, t, front) {
+  const k0 = sramp(t, T.lotus - 0.3, T.lotus + 0.2); if (k0 < 0.01) return;
+  const F = lotusSprites(st), Rp = pullR(st), cx = st.cx, cy = st.ecy, base = cy + Rp * (front ? 1.04 : 0.7);
+  const list = front ? [[-74, 0.78], [74, 0.78], [-46, 0.7], [46, 0.7]] : PETALS;
+  list.forEach(([ang, len], i) => {
+    const order = front ? 6 + i : Math.abs(ang) / 19.5, tt = t - T.lotus - order * 0.08;
+    const open = clamp(spring(tt, 7, 0.5), 0, 1.25), a = ang * open;
+    if (tt < -0.05) return;
+    g.save(); g.translate(cx, base); g.rotate(a * DEG); const s = (front ? Rp * 1.05 / 170 : Rp / 300) * len * lerp(0.55, 1, clamp(open));
+    g.scale(s, s); g.globalAlpha = k0;
+    put(g, front ? F.small : F.petal, 0.25, 4, 8);
+    g.restore();
+  });
+}
+function aura(g, st, t) {
+  const k = sramp(t, T.pull + 1.2, T.pull + 2.6); if (k < 0.01) return;
+  const Rp = pullR(st), cx = st.cx, cy = st.ecy, pul = 0.85 + 0.15 * Math.sin(t * 1.6);
+  g.globalCompositeOperation = 'lighter';
+  const gr = g.createRadialGradient(cx, cy, Rp * 0.96, cx, cy, Rp * 1.55);
+  gr.addColorStop(0, `rgba(255,200,140,${0.42 * k * pul})`); gr.addColorStop(0.35, `rgba(255,180,150,${0.16 * k * pul})`); gr.addColorStop(1, 'rgba(255,170,150,0)');
+  g.fillStyle = gr; g.fillRect(cx - Rp * 1.6, cy - Rp * 1.6, Rp * 3.2, Rp * 3.2);
+  g.globalCompositeOperation = 'source-over';
+}
+// the warm point: the room, glowing on the line between the grey and the colour
+function warmPoint(g, st, t) {
+  const k = sramp(t, T.pull + 0.6, T.pull + 2); if (k < 0.01) return;
+  const [x, y] = st.place('main', A_ROOM, 70, t), pu = Math.min(st.W, st.H) / 820, pul = 0.8 + 0.2 * Math.sin(t * 2.4);
+  g.globalCompositeOperation = 'lighter';
+  st.stamp(g, st.dot(255, 170, 90), x, y, 70 * pu * pul, 0.7 * k);
+  st.stamp(g, st.dot(255, 214, 150, '255,248,230'), x, y, 18 * pu, k);
+  g.globalCompositeOperation = 'source-over';
+}
+// a little grey cloud still raining over the grey half
+const RAINCLOUD = { c: null, src: null };
+function rainCloud(g, st, t) {
+  const k = sramp(t, T.pull + 1.4, T.pull + 2.6); if (k < 0.01) return;
+  const Rp = pullR(st), x = st.cx - Rp * 0.86, y = st.ecy - Rp * 0.92, pu = Math.min(st.W, st.H) / 820, spr = st.fx.clouds[1];
+  g.save(); g.globalAlpha = k; g.strokeStyle = 'rgba(200,210,225,.55)'; g.lineWidth = 1.4 * pu; g.lineCap = 'round';
+  for (let i = 0; i < 12; i++) { const ph = (t * 1.4 + hash(i * 3)) % 1, xx = x + (hash(i) - 0.5) * 80 * pu, yy = y + 10 * pu + ph * 70 * pu; g.globalAlpha = k * (1 - ph); g.beginPath(); g.moveTo(xx, yy); g.lineTo(xx - 3 * pu, yy + 12 * pu); g.stroke(); }
+  if (!RAINCLOUD.c || RAINCLOUD.src !== spr.spr.img) {
+    const c = makeCanvas(spr.spr.img.width, spr.spr.img.height), cg = c.getContext('2d');
+    cg.drawImage(spr.spr.img, 0, 0); cg.globalCompositeOperation = 'source-atop'; cg.fillStyle = 'rgba(70,78,92,.5)'; cg.fillRect(0, 0, c.width, c.height);
+    if (RAINCLOUD.c) release(RAINCLOUD.c); RAINCLOUD.c = c; RAINCLOUD.src = spr.spr.img;
+  }
+  g.globalAlpha = k; g.translate(x, y); g.scale(pu * 1.05, pu * 1.05); put(g, { ...spr.spr, img: RAINCLOUD.c }, 0.2, 4, 6);
+  g.restore();
+}
+// The name, last: cut cream letters glued onto the planet's cardboard face, with the lotus mark;
+// below it a card like the others with what they do, where, and how to book.
+const LOGO_FX = { key: '', spr: null };
+function ctaSprite(st) {
+  const key = st.W + 'x' + st.H; if (LOGO_FX.key === key) return LOGO_FX.spr;
+  if (LOGO_FX.spr) { release(LOGO_FX.spr.img); release(LOGO_FX.spr.shadow); }
+  const sc = st.W / 600, w = 440, h = 150;
+  const sh = new BlurSheet('cta', [-w / 2, -h / 2, w / 2, h / 2], sc, { pad: 14 }, 0);
+  const fit = (g, font, size, text, max) => { let fs = size; g.font = font(fs); while (g.measureText(text).width > max && fs > 12) { fs -= 1; g.font = font(fs); } };
+  sh.piece([[-w / 2, -h / 2 + 3], [0, -h / 2 - 1], [w / 2, -h / 2 + 2], [w / 2 - 2, h / 2 - 2], [0, h / 2 + 1], [-w / 2 + 2, h / 2]], '#f6efe2', { round: 4, rough: 1.1, seg: 70, lift: 3, thick: 2.4, paint: (g) => {
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#4a3e36'; fit(g, (f) => `italic 400 ${f}px Fraunces`, 26, BRAND.line, w - 50); g.fillText(BRAND.line, 0, -h / 2 + 30);
+    g.fillStyle = '#4a3e36'; fit(g, (f) => `400 ${f}px Fraunces`, 23, BRAND.where, w - 50); g.fillText(BRAND.where, 0, -2);
+    g.fillStyle = 'rgba(177,48,42,.85)'; g.fillRect(-22, 18, 44, 1.6);
+    g.fillStyle = '#2a2420'; fit(g, (f) => `620 ${f}px Fraunces`, 28, BRAND.cta, w - 50); g.fillText(BRAND.cta, 0, h / 2 - 30);
+  } });
+  LOGO_FX.spr = sh.finish({ shadowBlur: 8 }); LOGO_FX.key = key; return LOGO_FX.spr;
+}
+function lotusMark(g, cx, cy, s) {
+  for (const [a, l] of [[-64, 0.6], [-34, 0.86], [0, 1], [34, 0.86], [64, 0.6]]) { const ar = a * DEG, tx = cx + Math.sin(ar) * 30 * l * s, ty = cy - Math.cos(ar) * 34 * l * s; g.beginPath(); g.moveTo(cx, cy); g.quadraticCurveTo(cx + Math.sin(ar - 0.5) * 22 * l * s, cy - Math.cos(ar - 0.5) * 22 * l * s, tx, ty); g.quadraticCurveTo(cx + Math.sin(ar + 0.5) * 22 * l * s, cy - Math.cos(ar + 0.5) * 22 * l * s, cx, cy); g.stroke(); }
+  g.beginPath(); g.moveTo(cx - 28 * s, cy + 4 * s); g.quadraticCurveTo(cx, cy + 14 * s, cx + 28 * s, cy + 4 * s); g.stroke();
+}
+function logo(g, st, t) {
+  // the title on the planet: each piece pressed on in turn, with its cut edge and shadow
+  const Rp = pullR(st), cx = st.cx, cy = st.ecy + Rp * 0.06, u = Rp / 400;
+  const parts = [['mark', T.logo - 0.15], ['name', T.logo], ['sub', T.logo + 0.35]];
+  for (const [what, t0] of parts) {
+    const k = sramp(t, t0, t0 + 0.35); if (k < 0.01) continue;
+    const press = 1 + (1 - clamp(spring(t - t0, 12, 0.5))) * 0.12;
+    g.save(); g.translate(cx, cy); g.scale(press, press); g.globalAlpha = k;
+    for (const [dx, dy, col] of [[3 * u, 5 * u, 'rgba(30,16,8,.55)'], [0, 0, '#f6eee0']]) {
+      g.fillStyle = col; g.strokeStyle = col; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+      if (what === 'mark') { g.lineWidth = 5 * u; g.lineJoin = 'round'; g.lineCap = 'round'; lotusMark(g, dx, -112 * u + dy, 2.1 * u); }
+      if (what === 'name') { g.font = `600 ${76 * u}px Fraunces`; if (g.letterSpacing !== undefined) g.letterSpacing = `${7 * u}px`; g.fillText(BRAND.name, dx + 3.5 * u, 28 * u + dy); if (g.letterSpacing !== undefined) g.letterSpacing = '0px'; }
+      if (what === 'sub') { g.font = `italic 400 ${44 * u}px Fraunces`; g.fillText(BRAND.sub, dx, 92 * u + dy); }
+    }
+    g.restore();
+  }
+  // the card with the rest
+  const k = drop(t, T.logo + 0.6); if (k < -0.9) return;
+  const spr = ctaSprite(st), sc = st.W / 600 * 0.9, y = lerp(st.H * 1.2, st.H * 0.715, clamp(k)) - (k > 1 ? (k - 1) * st.H * 0.04 : 0);
+  g.save(); g.translate(st.W * 0.5, y); g.rotate(Math.sin(t * 0.9) * 0.6 * DEG); g.scale(sc, sc); put(g, spr, 0.3, 5, 9); g.restore();
+}
+hook({
+  sky(g, st, t, S) { if (S.pull > 0.02) { aura(g, st, t); lotus(g, st, t, false); } },
+  over(g, st, t, S) { if (S.pull > 0.02) { warmPoint(g, st, t); rainCloud(g, st, t); lotus(g, st, t, true); logo(g, st, t); } },
+});
 
 E.sort((p, q) => (p.z || 0) - (q.z || 0) || p.a - q.a);
 const byLayer = {};
@@ -231,7 +554,7 @@ function state(t, stage) {
   const c = cam(t), lights = [], emitters = [], smoke = [];
   for (const f of HOOK.lights) f(t, c, lights, emitters, smoke, stage);
   const zoom = zoomK(t) / stage.zm; // the stage's own close-up for tall screens is folded into the track
-  const lk = eraLook(t), pull = sramp(t, T.pull, T.pull + 2.6);
+  const lk = eraLook(t), pull = sramp(t, T.pull, T.pull + 1.9);
   let sun = null;
   if (lk.rays > 0.01 && stage && stage.W) sun = { x: (stage.W * 0.22 - stage.cx) / stage.u, y: (stage.H * 0.3 - stage.hy) / stage.u, k: lk.rays * sramp(t, 17.6, 18.4) * (1 - sramp(t, 20.2, 20.8)), noDisc: true };
   return {
@@ -369,4 +692,4 @@ function soundEvents(stage) {
   return { flaps, cam: Array.from({ length: Math.ceil(DURATION * 10) }, (_, i) => +cam(i / 10).toFixed(2)) };
 }
 
-export const film = { horizon: (aspect) => lerp(0.735, 0.68, sramp(aspect, 0.6, 1.5)), titleT: 2, keepFull: () => false, duration: DURATION, cam, state, entities: E, byLayer, profile, ground, clouds, bake, shadowDx, body: [92, 74, 60], soundEvents, fx: { sky, ground: groundFx, over: overFx } };
+export const film = { horizon: (aspect) => lerp(0.735, 0.68, sramp(aspect, 0.6, 1.5)), pullFit: (st) => pullR(st), pullY: 0.385, titleT: 2, keepFull: () => false, duration: DURATION, cam, state, entities: E, byLayer, profile, ground, clouds, bake, shadowDx, body: [126, 98, 72], soundEvents, fx: { sky, ground: groundFx, over: overFx } };

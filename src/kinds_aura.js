@@ -38,8 +38,8 @@ export function tangle(g, x, y, r, L, k, t, seed = 1, w = 1.6, alpha = 1) {
 
 // ---------------------------------------------------------------- people ---
 Object.assign(LOOKS, {
-  auHer: { skin: 4, top: 'coat', topCol: '#857a76', legs: 'trousers', legCol: '#3b3a44', hair: 'bob', hairCol: '#3a2418', pose: 'walk', shoe: '#2a2422' },
-  auHerStand: { skin: 4, top: 'coat', topCol: '#857a76', legs: 'trousers', legCol: '#3b3a44', hair: 'bob', hairCol: '#3a2418', pose: 'stand', shoe: '#2a2422' },
+  auHer: { skin: 4, top: 'coat', topCol: '#9a5844', legs: 'trousers', legCol: '#3b3a44', hair: 'bob', hairCol: '#3a2418', pose: 'walk', shoe: '#2a2422' },
+  auHerStand: { skin: 4, top: 'coat', topCol: '#9a5844', legs: 'trousers', legCol: '#3b3a44', hair: 'bob', hairCol: '#3a2418', pose: 'stand', shoe: '#2a2422' },
   auBrollyA: { skin: 5, top: 'coat', topCol: '#4c505a', legs: 'trousers', legCol: '#2e2e34', hair: 'short', hairCol: '#2a2420', pose: 'walk' },
   auBrollyB: { skin: 6, top: 'coat', topCol: '#5e4c46', legs: 'trousers', legCol: '#34303a', hair: 'long', hairCol: '#5a3a26', pose: 'walk' },
   auBrollyC: { skin: 2, top: 'coat', topCol: '#3e4a48', legs: 'trousers', legCol: '#2a2a2e', hair: 'short', hairCol: '#1a1412', pose: 'walk' },
@@ -171,9 +171,10 @@ KINDS.au_brolly = {
     return P;
   },
   draw(g, P, t, e, env) {
-    const o = { lean: 6 + Math.sin(t * 0.9 + e.a) * 0.6, head: 8, back: [0, -10], front: [-150, 12] };
+    const o = { lean: 6 + Math.sin(t * 0.9 + e.a) * 0.6, head: 8, back: [0, -10], front: [-40, -110] };
     const ph = t * (e.pace ?? 5) + e.a; Object.assign(o, { walk: ph, back: [Math.sin(ph) * 20, -14] });
-    o.held = (g2) => { g2.save(); g2.translate(0, 21); g2.rotate(-(o.lean + o.front[0] + o.front[1]) * DEG + Math.sin(ph * 2) * 0.03); put(g2, P.shaft, 0); g2.translate(0, -48); put(g2, P.brolly, env.sh * 0.6, 2, 3); g2.restore(); };
+    // the hand at the shoulder, the shaft straight up, the canopy tipped back over the head
+    o.held = (g2) => { g2.save(); g2.translate(0, 20); g2.rotate(-(o.lean + o.front[0] + o.front[1] + 10) * DEG + Math.sin(ph * 2) * 0.03); g2.scale(1, 1.55); put(g2, P.shaft, 0); g2.scale(1, 1 / 1.55); g2.translate(0, -74); put(g2, P.brolly, env.sh * 0.6, 2, 3); g2.restore(); };
     drawPerson(g, P, t, e, env, o);
   },
 };
@@ -210,7 +211,7 @@ KINDS.au_stack = {
       else if (kind === 'laptop') sh.piece(rect(-w / 2, 0, w / 2, -h), col, { round: 2, paint: (g) => { g.fillStyle = 'rgba(40,40,44,.6)'; g.fillRect(-w / 2, -2.4, w, 1.2); g.fillStyle = 'rgba(255,255,255,.4)'; g.beginPath(); g.arc(0, -h / 2 - 0.6, 1.6, 0, 7); g.fill(); } });
       else if (kind === 'folder') sh.piece(rect(-w / 2, 0, w / 2, -h), col, { round: 1.2, paint: (g) => { g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(-w / 2, -h, w, 2); g.fillStyle = '#efe6cf'; g.fillRect(-w / 2 + 3, -h + 2.5, 10, h - 5); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(w / 2 - 6, -h, 3, h); } });
       else if (kind === 'papers') { sh.piece(rect(-w / 2, 0, w / 2, -h), col, { round: 0.8, paint: (g) => { g.strokeStyle = 'rgba(120,100,80,.5)'; g.lineWidth = 0.5; for (let y = -1.5; y > -h; y -= 2) { g.beginPath(); g.moveTo(-w / 2, y); g.lineTo(w / 2, y + (r() - 0.5)); g.stroke(); } } }); sh.piece(rect(w / 2 - 12, -h + 2, w / 2 + 6, -h + 9), '#f4e07a', { round: 0.6, lift: 0.8, thick: 0.4 }).piece(rect(-w / 2 - 5, -h + 6, -w / 2 + 8, -h + 12), '#f2a8a0', { round: 0.6, lift: 0.8, thick: 0.4 }); }
-      else if (kind === 'cal') sh.piece(rect(-w / 2, 0, w / 2, -h), col, { round: 1.2, paint: (g) => { g.fillStyle = '#b1302a'; g.fillRect(-w / 2, -h, w, 9); g.fillStyle = '#fff4e4'; g.font = '700 5.6px Fraunces'; g.textAlign = 'center'; g.fillText(label, 0, -h + 6.6); g.strokeStyle = 'rgba(60,50,40,.5)'; g.lineWidth = 0.4; for (let i = 0; i < 4; i++) for (let j = 0; j < 6; j++) g.strokeRect(-w / 2 + 3 + j * 6.3, -h + 12 + i * 5, 6.3, 5); g.strokeStyle = 'rgba(177,48,42,.85)'; g.lineWidth = 0.8; for (let j = 0; j < 5; j++) { const x = -w / 2 + 3 + j * 6.3, y = -h + 12 + 5; g.beginPath(); g.moveTo(x + 1, y + 1); g.lineTo(x + 5.3, y + 4); g.moveTo(x + 5.3, y + 1); g.lineTo(x + 1, y + 4); g.stroke(); } } });
+      else if (kind === 'cal') sh.piece(rect(-w / 2, 0, w / 2, -h), col, { round: 1.2, paint: (g) => { g.fillStyle = '#b1302a'; g.fillRect(-w / 2, -h, w, 11); g.fillStyle = '#fff4e4'; g.font = '700 5.4px Fraunces'; g.textAlign = 'center'; g.fillText(label, 0, -h + 9.2); g.strokeStyle = 'rgba(60,50,40,.5)'; g.lineWidth = 0.4; for (let i = 0; i < 4; i++) for (let j = 0; j < 6; j++) g.strokeRect(-w / 2 + 3 + j * 6.3, -h + 13.5 + i * 4.8, 6.3, 4.8); g.strokeStyle = 'rgba(177,48,42,.85)'; g.lineWidth = 0.8; for (let j = 0; j < 5; j++) { const x = -w / 2 + 3 + j * 6.3, y = -h + 13.5 + 4.8; g.beginPath(); g.moveTo(x + 1, y + 1); g.lineTo(x + 5.3, y + 4); g.moveTo(x + 5.3, y + 1); g.lineTo(x + 1, y + 4); g.stroke(); } } });
       else if (kind === 'bag') sh.piece(strip(6, -h + 2, 14, -h - 22, 6, 4), '#d8b46a', { round: 2, lift: 0, paint: (g) => { g.strokeStyle = 'rgba(120,80,30,.6)'; g.lineWidth = 0.7; for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(5 + k * 2.4, -h - 4 - k * 5); g.lineTo(11 + k * 2.2, -h - 6 - k * 5); g.stroke(); } } }).piece(strip(-6, -h + 2, -12, -h - 16, 4, 6), '#7aa05a', { round: 2, lift: 0.8 }).piece(rect(-w / 2, 0, w / 2, -h), col, { round: 2, lift: 1.2, paint: (g) => { g.strokeStyle = 'rgba(90,70,40,.5)'; g.lineWidth = 0.6; for (let y = -4; y > -h; y -= 5) { g.beginPath(); g.moveTo(-w / 2, y); g.lineTo(w / 2, y); g.stroke(); } } });
       else if (kind === 'clock') sh.piece(ellipse(-9, -h + 2, 5.5, 5, 10), '#a8342a', { round: 2 }).piece(ellipse(9, -h + 2, 5.5, 5, 10), '#a8342a', { round: 2 }).piece([[-9, 0], [-12, 3], [-8, 3], [-6, 0], [6, 0], [8, 3], [12, 3], [9, 0]], '#3a3030', { round: 0.6, lift: 0.4 }).piece(ellipse(0, -h / 2, w / 2, h / 2, 16), col, { round: 4, lift: 1.4, paint: (g) => { g.fillStyle = '#f4ecd8'; g.beginPath(); g.arc(0, -h / 2, w / 2 - 3.4, 0, 7); g.fill(); g.strokeStyle = '#2a2020'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(0, -h / 2); g.lineTo(0, -h / 2 - 7.5); g.moveTo(0, -h / 2); g.lineTo(5, -h / 2 + 2); g.stroke(); g.fillStyle = 'rgba(40,30,30,.6)'; for (let k = 0; k < 12; k++) { const a = k / 12 * 6.283; g.fillRect(Math.cos(a) * 8.6 - 0.5, -h / 2 + Math.sin(a) * 8.6 - 0.5, 1, 1); } } });
       P.items.push({ spr: sh.finish({ shadowBlur: 3 }), h, kind });
@@ -336,4 +337,159 @@ KINDS.au_hedge = {
     return { spr: sh.finish({ shadowBlur: 4 }) };
   },
   draw(g, P, t, e, env) { g.rotate(fbm(t * 0.4 + e.a, 5) * 1.2 * DEG); put(g, P.spr, env.sh); },
+};
+
+// ---------------------------------------------------------------- the room ---
+// Their room, cut open like a dollhouse: warm walls, a wood floor, a linen curtain at a rainy window,
+// a wooden shelf of rolled towels and jars, a rice-paper lamp, a lotus print, her rust coat on its hook,
+// a side table with the tray of candles, creams and the oil. The storey above stays grey.
+export const ROOM = { w: 150, h: 226, door: [112, 142] };
+KINDS.au_room = {
+  bake(mk) {
+    const { w, h } = ROOM, r = rng(8080), wall = '#dcc7a8', P = {};
+    const sh = mk('au-room', [-w - 10, -h - 120, w + 10, 24]);
+    // the grey storey above, and the cut edge of the building
+    sh.piece(rect(-w, -h - 6, w, -h - 112), '#8e887e', { round: 1.2, paint: (g) => { g.fillStyle = 'rgba(34,36,42,.85)'; for (const x of [-110, -40, 30, 100]) g.fillRect(x - 12, -h - 92, 24, 56); g.fillStyle = 'rgba(200,196,186,.4)'; g.fillRect(-w, -h - 10, w * 2, 3); } });
+    sh.piece(rect(-w - 6, -h - 104, w + 6, -h - 118), '#5a5450', { round: 1, lift: 1.4 });
+    // the back wall: warm limewash, a darker skirting
+    sh.piece(rect(-w + 8, 0, w - 8, -h), wall, { round: 0.8, lift: 0, thick: 0, rim: 0.2, paint: (g) => {
+      const gr = g.createRadialGradient(-10, -h * 0.55, 10, -10, -h * 0.55, w * 1.2); gr.addColorStop(0, 'rgba(255,236,200,.35)'); gr.addColorStop(1, 'rgba(90,60,40,.25)'); g.fillStyle = gr; g.fillRect(-w, -h, w * 2, h);
+      g.fillStyle = 'rgba(120,90,60,.12)'; for (let i = 0; i < 26; i++) g.fillRect(-w + r() * w * 2, -h, 1.2, h);
+      g.fillStyle = '#8a6448'; g.fillRect(-w, -10, w * 2, 10);
+    } });
+    // the window, rainy blue outside, and its curtain
+    sh.piece(rect(-128, -96, -66, -186), '#3e4a62', { round: 1, lift: 0.6, thick: 0, paint: (g) => { g.fillStyle = 'rgba(200,215,240,.35)'; for (let i = 0; i < 14; i++) { const x = -126 + r() * 58, y = -184 + r() * 86; g.fillRect(x, y, 0.8, 4 + r() * 6); } g.fillStyle = 'rgba(40,40,46,.6)'; g.fillRect(-128, -150, 62, 2); } });
+    sh.piece([...rect(-131, -93, -63, -189)].reverse().concat([[-131, -189]]), '#f0e6d2', { round: 0.6, lift: 1.2 });
+    sh.piece(rect(-99, -93, -95, -189), '#f0e6d2', { round: 0.5, lift: 1.3 });
+    sh.piece([[-140, -196], [-112, -196], [-104, -150], [-110, -120], [-104, -10], [-140, -8]], '#e6d8bc', { round: 2, lift: 1.8, paint: (g) => { g.strokeStyle = 'rgba(140,110,80,.3)'; g.lineWidth = 1; for (let x = -136; x < -106; x += 6) { g.beginPath(); g.moveTo(x, -196); g.quadraticCurveTo(x + 3, -120, x + 1, -8); g.stroke(); } } });
+    sh.piece(rect(-112, -128, -100, -122), '#c49a6a', { round: 1, lift: 2 });
+    sh.piece(rect(-146, -199, -58, -203), '#6a4a34', { round: 0.6, lift: 1.4 });
+    // the lotus print above the table
+    sh.piece(rect(-34, -196, 14, -150), '#7a5a40', { round: 1, lift: 1.4 }).piece(rect(-30, -192, 10, -154), '#f4ede0', { round: 0.6, lift: 0.8, paint: (g) => {
+      g.strokeStyle = '#3a302a'; g.lineWidth = 0.9; g.lineJoin = 'round'; const cx = -10, cy = -164;
+      for (const [a, l] of [[-62, 0.62], [-34, 0.85], [0, 1], [34, 0.85], [62, 0.62]]) { const ar = a * DEG, tx = cx + Math.sin(ar) * 16 * l, ty = cy - Math.cos(ar) * 18 * l; g.beginPath(); g.moveTo(cx, cy); g.quadraticCurveTo(cx + Math.sin(ar - 0.5) * 12 * l, cy - Math.cos(ar - 0.5) * 12 * l, tx, ty); g.quadraticCurveTo(cx + Math.sin(ar + 0.5) * 12 * l, cy - Math.cos(ar + 0.5) * 12 * l, cx, cy); g.stroke(); }
+      g.beginPath(); g.moveTo(cx - 14, cy + 2); g.quadraticCurveTo(cx, cy + 7, cx + 14, cy + 2); g.stroke();
+    } });
+    // the shelf of towels and jars
+    sh.piece(rect(70, -2, 136, -176), '#8a5e3e', { round: 1, lift: 1.6, paint: (g) => { g.fillStyle = 'rgba(40,24,14,.55)'; for (const y of [-60, -112, -164]) g.fillRect(74, y - 44, 58, 44); } });
+    for (const y of [-60, -112]) for (let k = 0; k < 3; k++) sh.piece(ellipse(84 + k * 18, y - 9, 8.5, 8.5, 12), '#f4efe4', { round: 3, lift: 1.4, paint: (g) => { g.strokeStyle = 'rgba(150,140,120,.6)'; g.lineWidth = 0.7; g.beginPath(); g.arc(84 + k * 18, y - 9, 4.5, 0, 6); g.stroke(); } });
+    for (const [x, c] of [[80, '#efe6d6'], [96, '#d9c2a6'], [112, '#efe6d6']]) sh.piece(rect(x - 6, -164, x + 6, -180), c, { round: 2, lift: 1.4 });
+    sh.piece(rect(118, -164, 128, -192), '#9a6a3a', { round: 2, lift: 1.4 }).piece([[114, -192], [108, -214], [120, -200], [123, -222], [127, -200], [138, -212], [132, -192]], '#6a8a5a', { round: 3, lift: 1.6 });
+    sh.piece(rect(70, -176, 136, -184), '#7a523a', { round: 0.8, lift: 1.8 });
+    // the coat on its hook by the window
+    sh.piece(rect(-60, -178, -54, -174), '#3a2a20', { round: 0.6, lift: 1 }).piece([[-63, -174], [-50, -174], [-44, -120], [-47, -96], [-66, -96], [-69, -120]], '#9a5844', { round: 3, lift: 2, paint: (g) => { g.fillStyle = 'rgba(40,20,14,.4)'; for (let y = -160; y < -100; y += 12) { g.beginPath(); g.arc(-52, y, 1, 0, 7); g.fill(); } } });
+    // the side table, the tray, candles in jars, creams, the oil, lavender
+    sh.piece(rect(56, -56, 110, -62), '#8a5e3e', { round: 1, lift: 2 }).piece(rect(60, 0, 64, -56), '#7a5236', { round: 0.5, lift: 2 }).piece(rect(102, 0, 106, -56), '#7a5236', { round: 0.5, lift: 2 });
+    sh.piece(ellipse(83, -64, 26, 4, 16), '#a8784c', { round: 2, lift: 2.2 });
+    for (const x of [68, 77]) sh.piece(rect(x - 4, -64, x + 4, -74), '#c08a50', { round: 1.5, lift: 2.4, paint: (g) => { g.fillStyle = 'rgba(255,240,200,.5)'; g.fillRect(x - 3, -72, 6, 2); } });
+    sh.piece(rect(84, -64, 92, -70), '#f2ede2', { round: 2, lift: 2.4 }).piece(rect(84, -70, 92, -72.5), '#d8cfc0', { round: 1, lift: 2.5 });
+    sh.piece([[96, -64], [104, -64], [104, -82], [102, -86], [102, -92], [98, -92], [98, -86], [96, -82]], '#b06a24', { round: 1.5, lift: 2.4, paint: (g) => { g.fillStyle = 'rgba(255,220,150,.45)'; g.fillRect(97.5, -82, 2, 14); g.fillStyle = '#f2ead6'; g.fillRect(96.5, -78, 7, 6); } });
+    sh.piece(strip(108, -64, 116, -86, 1, 0.8), '#6a7a4a', { round: 0.4, lift: 2.4 }).piece(ellipse(116, -86, 2.4, 6, 8, 0.3), '#8a74b8', { round: 1, lift: 2.5 });
+    // black stones warming on the tray's edge
+    for (const [x, rr] of [[60, 3.4], [66, 2.6]]) sh.piece(ellipse(x, -66.5, rr, rr * 0.6, 10), '#2a2626', { round: 1.5, lift: 2.4 });
+    // the wood floor, and the cut edges of walls, floor and ceiling
+    sh.piece(rect(-w, 0, w, 14), '#7a5236', { round: 1, lift: 2, paint: (g) => { g.strokeStyle = 'rgba(40,24,12,.4)'; g.lineWidth = 0.8; for (let x = -w; x < w; x += 22) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 3, 14); g.stroke(); } } });
+    sh.piece(rect(-w - 4, 14, w + 4, 24), '#6a5a4c', { round: 1, lift: 1.6 });
+    sh.piece(rect(-w, -h, -w + 9, 14), '#9a9286', { round: 1, lift: 2.4, paint: (g) => { g.fillStyle = KRAFT; g.fillRect(-w + 2, -h, 2, h + 14); } });
+    sh.piece(rect(w - 9, -h, w, -ROOM.door[1] - 6), '#9a9286', { round: 1, lift: 2.4, paint: (g) => { g.fillStyle = KRAFT; g.fillRect(w - 5, -h, 2, h); } });
+    sh.piece(rect(w - 9, -ROOM.door[1] - 6, w, -ROOM.door[1]), '#7a5236', { round: 0.6, lift: 2.4 });
+    sh.piece(rect(-w - 4, -h + 4, w + 4, -h - 8), '#9a9286', { round: 1, lift: 2.6, paint: (g) => { g.fillStyle = KRAFT; g.fillRect(-w, -h - 4, w * 2, 2); } });
+    // the rice-paper lamp on its cord
+    sh.piece(rect(-10.6, -h, -9.4, -h + 34), '#3a2a20', { round: 0, lift: 1, thick: 0, rim: 0 });
+    P.spr = sh.finish({ shadowBlur: 6 });
+    P.lamp = mk('au-lamp', [-20, -20, 20, 20], { pad: 5 }).piece(ellipse(0, 0, 16, 15, 18), '#f6ecd8', { round: 4, paint: (g) => { g.strokeStyle = 'rgba(160,130,90,.35)'; g.lineWidth = 0.6; for (let y = -12; y < 14; y += 3.4) { g.beginPath(); g.ellipse(0, y, 16 * Math.sqrt(1 - (y / 15) ** 2), 1.2, 0, 0, 7); g.stroke(); } } }).finish({ shadowBlur: 3 });
+    return P;
+  },
+  draw(g, P, t, e, env) {
+    put(g, P.spr, env.sh, 4, 5);
+    g.save(); g.translate(-10, -ROOM.h + 50); g.rotate(Math.sin(t * 0.7) * 1.2 * DEG); put(g, P.lamp, env.sh * 0.5, 2, 3); g.restore();
+  },
+  glow(g, P, t, e, env, p) {
+    if (p < 0.5) return; const k = e.warm ? e.warm(t) : 1;
+    g.globalCompositeOperation = 'lighter';
+    const lx = -10, ly = -ROOM.h + 50, f = 0.92 + 0.08 * fbm(t * 2, 7);
+    const gl = g.createRadialGradient(lx, ly, 2, lx, ly, 150); gl.addColorStop(0, `rgba(255,214,150,${0.55 * k * f})`); gl.addColorStop(0.2, `rgba(255,190,120,${0.22 * k})`); gl.addColorStop(1, 'rgba(255,170,100,0)');
+    g.fillStyle = gl; g.fillRect(lx - 150, ly - 150, 300, 300);
+    g.fillStyle = `rgba(255,236,190,${0.6 * k})`; g.beginPath(); g.ellipse(lx, ly, 13, 12, 0, 0, 7); g.fill();
+    for (const [x, y] of [[68, -76], [77, -76]]) { const fl = 0.75 + 0.25 * fbm(t * 8 + x, 5); const cg = g.createRadialGradient(x, y, 0, x, y, 26); cg.addColorStop(0, `rgba(255,236,170,${0.95 * k * fl})`); cg.addColorStop(0.2, `rgba(255,170,80,${0.4 * k * fl})`); cg.addColorStop(1, 'rgba(255,150,70,0)'); g.fillStyle = cg; g.fillRect(x - 26, y - 26, 52, 52); g.fillStyle = `rgba(255,244,200,${k})`; g.beginPath(); g.ellipse(x + fbm(t * 6 + x, 2) * 0.5, y + 0.5, 1, 2.6, 0, 0, 7); g.fill(); }
+    const ob = g.createRadialGradient(100, -78, 0, 100, -78, 12); ob.addColorStop(0, `rgba(255,190,90,${0.5 * k})`); ob.addColorStop(1, 'rgba(255,160,60,0)'); g.fillStyle = ob; g.fillRect(88, -90, 24, 24);
+    // daylight through the doorway on the right, once the colour has come back
+    const d = e.day ? e.day(t) : 0;
+    if (d > 0.01) { const dg = g.createLinearGradient(ROOM.w, 0, ROOM.w - 80, 0); dg.addColorStop(0, `rgba(255,236,190,${0.6 * d})`); dg.addColorStop(1, 'rgba(255,236,190,0)'); g.fillStyle = dg; g.fillRect(ROOM.w - 80, -ROOM.door[1], 80, ROOM.door[1]); }
+    g.globalCompositeOperation = 'source-over';
+  },
+};
+
+// The table with her on it, face down under a towel, and the practitioner at its head.
+// One kind, so the hands land exactly on her back. e.pract(t) -> { lean, head, hands: [[x, y], [x, y]] }
+KINDS.au_couch = {
+  bake(mk) {
+    const P = { pr: KINDS.person.bake(mk, 'auPract') }, skin = '#c69a74', skinD = '#b0845f';
+    P.table = mk('au-table', [-100, -74, 90, 6])
+      .piece(rect(-62, 2, -56, -54), '#7a5236', { round: 0.6 }).piece(rect(56, 2, 62, -54), '#7a5236', { round: 0.6 }).piece(rect(-62, -22, 62, -26), '#6a4a30', { round: 0.4, lift: 1 })
+      .piece(rect(-76, -54, 76, -63), '#d8ccb4', { round: 3, lift: 1.6, paint: (g) => { g.fillStyle = 'rgba(120,100,80,.25)'; g.fillRect(-76, -56, 152, 2); } })
+      .piece([[-78, -63], [78, -63], [80, -52], [74, -46], [-74, -46], [-80, -52]], '#ebe1cc', { round: 3, lift: 1.4, paint: (g) => { g.strokeStyle = 'rgba(150,130,100,.3)'; g.lineWidth = 0.7; for (let x = -70; x < 76; x += 16) { g.beginPath(); g.moveTo(x, -50); g.lineTo(x + 4, -47); g.stroke(); } } })
+      .piece([[-94, -58], [-80, -58], [-80, -66], [-94, -66]], '#d8ccb4', { round: 3, lift: 1.4 }).piece(rect(-90, -58, -84, -40), '#7a5236', { round: 0.5, lift: 1.2 })
+      .finish({ shadowBlur: 5 });
+    P.bolster = mk('au-bolster', [-14, -10, 14, 10], { pad: 4 }).piece(ellipse(0, 0, 13, 8, 14), '#b9cad6', { round: 3, paint: (g) => { g.strokeStyle = 'rgba(80,100,120,.3)'; g.lineWidth = 0.7; for (const x of [-8, 0, 8]) { g.beginPath(); g.moveTo(x, -8); g.lineTo(x, 8); g.stroke(); } } }).finish({ shadowBlur: 2 });
+    // her: legs under the towel to the bolster, the bare back, an arm along her side, her head in the face cradle
+    P.legs = mk('au-cl-legs', [-6, -20, 82, 4], { pad: 4 }).piece([[0, 0], [70, 0], [80, -6], [78, -12], [66, -12], [40, -14], [0, -16]], skinD, { ...lite, round: 4 }).finish({ shadowBlur: 3 });
+    P.back = mk('au-cl-back', [-56, -26, 12, 4], { pad: 4 }).piece([[-52, 0], [6, 0], [8, -12], [0, -19], [-14, -17], [-30, -21], [-44, -22], [-52, -18], [-55, -8]], skin, { ...lite, round: 6, paint: (g) => { g.strokeStyle = 'rgba(140,90,60,.25)'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(-50, -19); g.quadraticCurveTo(-24, -24, 4, -16); g.stroke(); } }).finish({ shadowBlur: 3 });
+    P.arm = mk('au-cl-arm', [-50, -8, 2, 6], { pad: 4 }).piece([[-46, 0], [-2, 0], [0, -5], [-46, -6]], skinD, { ...lite, round: 3 }).finish({ shadowBlur: 2 });
+    P.towel = mk('au-cl-towel', [-6, -26, 70, 4], { pad: 4 }).piece([[-4, 2], [66, 2], [68, -10], [56, -16], [30, -20], [4, -24], [-4, -20]], '#f6f1e6', { round: 4, lift: 1.4, paint: (g) => { g.strokeStyle = 'rgba(150,140,120,.35)'; g.lineWidth = 0.8; for (let x = 6; x < 64; x += 9) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 3, -16); g.stroke(); } } }).finish({ shadowBlur: 3 });
+    P.head = mk('au-cl-head', [-24, -22, 4, 6], { pad: 4 }).piece(ellipse(-10, -9, 11, 10, 14), skin, { ...lite, round: 4 }).piece([[-22, -6], [-20, -16], [-12, -21], [-2, -18], [2, -10], [-2, -2], [-12, 0], [-21, 2]], '#3a2418', { ...lite, round: 3, rim: 0.2 }).finish({ shadowBlur: 3 });
+    return P;
+  },
+  draw(g, P, t, e, env) {
+    // the practitioner stands behind the table, so the table and her body hide their lower half
+    // the practitioner, at the head of the table
+    const o = e.pract(t), px = o.px ?? -56;
+    g.save(); g.translate(px, 0);
+    const hip = P.pr.hip, L = o.lean * DEG, toT = (x, y) => { const dx = x - px, dy = y + hip; return [dx * Math.cos(L) + dy * Math.sin(L), -dx * Math.sin(L) + dy * Math.cos(L)]; };
+    const [f0, f1] = toT(...o.hands[0]), [b0, b1] = toT(...o.hands[1]);
+    o.front = reachDeg(f0 - 2, f1 + 34.5, 1); o.back = reachDeg(b0 + 3, b1 + 35, 1);
+    drawPerson(g, P.pr, t, e, env, o);
+    g.restore();
+    const sh = env.sh, cl = e.client ? e.client(t) : 1;
+    g.save(); g.translate(10, 0);
+    put(g, P.table, sh, 3, 4);
+    if (cl > 0.01) {
+      g.save(); g.translate(0, -63); g.scale(1, cl);
+      g.save(); g.translate(56, -6); put(g, P.bolster, sh * 0.5, 1, 2); g.restore();
+      const br = Math.sin(t * 1.6) * 0.4; // breathing, slow
+      g.save(); g.translate(-8, -1 + br * 0.2); put(g, P.legs, sh * 0.5, 1, 2); g.restore();
+      g.save(); g.translate(0, br * 0.3); g.scale(1, 1 + br * 0.03); put(g, P.back, sh * 0.5, 1, 2); g.restore();
+      g.save(); g.translate(-4, -2); put(g, P.towel, sh * 0.5, 1, 2); g.restore();
+      g.save(); g.translate(-4, -1); put(g, P.arm, sh * 0.4, 1, 2); g.restore();
+      g.save(); g.translate(-56, -4); put(g, P.head, sh * 0.5, 1, 2); g.restore();
+      // the knot on her upper back
+      const kk = e.knot ? e.knot(t) : 1;
+      if (kk.show > 0.01) tangle(g, -36, -21 + br * 0.3, 5.4, 46, kk.k, t, 7, 1.2, kk.show);
+      g.restore();
+    }
+    g.restore();
+  },
+};
+// two-link arm IK (upper 19, forearm 21 to the hand), in degrees
+function reachDeg(dx, dy, bend = 1, L1 = 19, L2 = 21) {
+  const D = Math.min(L1 + L2 - 0.01, Math.max(Math.abs(L1 - L2) + 0.01, Math.hypot(dx, dy)));
+  const phi = Math.atan2(-dx, dy), al = Math.acos((L1 * L1 + D * D - L2 * L2) / (2 * L1 * D)), be = Math.acos((L1 * L1 + L2 * L2 - D * D) / (2 * L1 * L2));
+  return [(phi + bend * al) / DEG, -bend * (Math.PI - be) / DEG];
+}
+
+// --------------------------------------------------------------- flowers ---
+// v = colour * 4 + shape: 0 tulip, 1 cosmos, 2 lavender spike, 3 round ranunculus
+KINDS.au_flower = {
+  bake(mk, v = 0) {
+    const shape = v % 4, col = BLOOM[(v >> 2) % BLOOM.length], r = rng(7700 + v), hgt = [44, 52, 48, 38][shape];
+    const sh = mk('au-fl' + v, [-22, -hgt - 22, 22, 4], { pad: 5 });
+    sh.piece(strip(0, 2, 1 + (r() - 0.5) * 4, -hgt, 2.2, 1.6), '#5d7a46', { round: 0.6, thick: 0.6 });
+    sh.piece([[0, -10], [-12, -20], [-14, -26], [-4, -18]], '#6a8a4e', { round: 2, lift: 0.8, thick: 0.5 }).piece([[1, -16], [12, -28], [14, -24], [4, -14]], '#6a8a4e', { round: 2, lift: 0.8, thick: 0.5 });
+    if (shape === 0) sh.piece([[0, -hgt + 2], [-8, -hgt - 4], [-8, -hgt - 14], [-4, -hgt - 10], [0, -hgt - 18], [4, -hgt - 10], [8, -hgt - 14], [8, -hgt - 4]], col, { round: 2.5, lift: 1.2 });
+    else if (shape === 1) { const pts = []; for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2, rr = i % 2 ? 4 : 12; pts.push([Math.cos(a) * rr, -hgt - 4 + Math.sin(a) * rr]); } sh.piece(pts, col, { round: 2.6, lift: 1.2 }).piece(ellipse(0, -hgt - 4, 3.4, 3.4, 8), '#e8b84a', { round: 1, lift: 0.8 }); }
+    else if (shape === 2) for (let i = 0; i < 7; i++) sh.piece(ellipse((i % 2 ? 1.6 : -1.6), -hgt + 10 - i * 5, 3.6 - i * 0.25, 3, 8), shade(col, -0.05 + i * 0.03), { round: 1.4, lift: 0.8, thick: 0.6 });
+    else sh.piece(ellipse(0, -hgt - 6, 10, 9, 14), col, { round: 4, lift: 1.2, paint: (g) => { g.strokeStyle = rgb(shade(col, -0.25), 0.5); g.lineWidth = 0.7; for (const rr of [3, 6, 8.5]) { g.beginPath(); g.arc(0, -hgt - 6, rr, 0.3, 5.6); g.stroke(); } } });
+    return { spr: sh.finish({ shadowBlur: 2.5 }), ph: r() * 9 };
+  },
+  draw(g, P, t, e, env) { g.rotate((fbm(t * 0.6 + e.a * 1.7 + P.ph, 9) * 6 + Math.sin(t * 1.4 + e.a) * 1.5) * DEG); put(g, P.spr, env.sh * 0.7, 2, 3); },
 };
