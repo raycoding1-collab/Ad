@@ -1,70 +1,54 @@
-# The Long Thread
+# AURAMANTRA — a paper reel
 
-A twelve-and-a-half-minute narrated film about the history of China, made of paper, cardboard and code:
-from a nine-thousand-year-old bone flute to the far side of the Moon. A tiny paper planet turns at the
-bottom of the screen; each stretch of it is an age, and the next one is always rising over the horizon.
-A red thread, stitched into the ground, runs through the whole of it.
+A 25-second Instagram Reel (9:16, 1080×1920, 30 fps, with sound) for **AURAMANTRA massage point**,
+Budapest X. kerület. Made of paper, cardboard and code, with the `paperfilm` skill.
 
-Sixteen chapters: the bone flute and the first fields; Shang bronze and oracle bones; the hundred
-schools; the First Emperor and his clay army; the Han and the Silk Road; the long division; the Tang;
-the Song's inventions; the Mongols and the Ming; the last dynasty; war and revolution; Mao's China;
-opening up; today; the breakthroughs (the Three Gorges, the Hong Kong–Zhuhai–Macao bridge, the
-Huajiang canyon bridge, Hefei's artificial sun, quantum satellites and computers, humanoid robots,
-dark factories, solar, wind and forests); and the long thread.
+**The video: `out/auramantra_reel.mp4`.** Cover frame: `out/cover.jpg`.
 
-## Watch it
+## The story (Hungarian cards, no narrator)
 
-**https://tinyurl.com/the-long-thread** (with sound), which redirects to
-https://raycoding1-collab.github.io/China-/. Built to be opened anywhere, including from an Instagram DM
-on iPhone and Android. It is published from the `gh-pages` branch: run `tools/publish_pages.sh` to update it.
+1. **Egész héten cipelted.** A grey, rainy Budapest street; a yellow tram goes by. A woman walks bent
+   under a swaying tower of her whole week: an archive box, a laptop, folders, a calendar with Monday
+   to Friday crossed out, the shopping, and an alarm clock on top. On her shoulder, a red knot.
+2. **Itt leteheted.** One ground-floor window glows with candles. She sets the week down on the
+   pavement; its loose pages fly up as paper butterflies; the rain stops; the door opens for her.
+3. **Kioldódnak a csomók.** Inside, their room, cut open like a dollhouse: the table with its beige
+   sheet and light-blue bolster, the tray of candles and creams, the oil, towels, lavender, black
+   stones, her coat on a hook. Up close, two hands work the red knot loose into one smooth thread.
+4. **Csak rád szabva.** A drop of warm oil falls into the practitioner's palms and a warm ring (an
+   aura) goes out from it. Three long lomi lomi strokes; with each, a paper wave rolls out of the room
+   and the grey world gets its colour back: amber, rose, lavender.
+5. **Pihekönnyen haza.** She walks home through the flowers, light, with a little skip.
+6. **The point.** Pulled back: the little planet, half grey and raining, half in bloom, one warm
+   point between them, held in a paper lotus. The name is glued onto the planet's cardboard face.
+   *balinéz · thai · lomi lomi — Budapest, X. ker. — Időpontfoglalás DM-ben.*
 
-## Watch it locally
+## Make it again
 
 ```sh
-python3 -m http.server 8765
-# open http://localhost:8765/ and press Begin (with sound)
+python3 -m http.server 8765 &                         # the stage
+python3 tools/timeline.py film/film.json              # script times -> src/timeline.js
+node tools/events.mjs                                 # the picture's paper flaps and footsteps -> .cache/events.json
+/home/user/tts/venv/bin/python tools/build_audio.py   # score, ambience, effects -> .cache/film.wav
+node tools/render.mjs out/auramantra_reel.mp4 30      # every frame at 1080x1920, muxed with the sound
 ```
 
-`?t=SECONDS` freezes the film on one frame (used for checking frames).
+`index.html?t=SECONDS` freezes one frame; `?play&from=SECONDS` previews silently in real time.
+`node tools/reelsheet.mjs NAME "t1,t2,..." [cols]` makes contact sheets at the real size
+(`SAFE=1` marks the areas Instagram's interface covers).
 
 ## How it is made
 
-- `film/film.json`: the master script, with narration lines, chapters and the times of every event.
-- `src/film.js`: the film itself: the camera path, every cut-out's place on the globe, the paint of each era, sky and light over time, and the special moments.
-- `src/engine.js`: the stage: the stacked turning discs, light, smoke, film grain and pop-up springs.
-- `src/paper.js`: the cardboard material (hand-cut edges, board thickness, paper grain, uneven paint, shadows).
-- `src/people.js`, `src/kinds_nature.js`, `src/kinds_built.js`, `src/cutouts.js`: the shared cut-outs.
-- `src/kinds_china.js`: China from the Neolithic to the 1980s (halls of every dynasty, the Wall, the terracotta army, Sanxingdui, junks and treasure ships...).
-- `src/kinds_modern_china.js`: the modern era, each built for its subject (Shanghai Tower, Fuxing trains, Long March 5, the Three Gorges, the HZMB pylons, the EAST tokamak, Micius, humanoid robots, robot arms).
-- `src/sky_china.js`, `src/sky_borrowed.js`: the close-up cards hung on threads (the bone flute, oracle bones, Zhang Heng's seismoscope, the compass, the qilin...).
-- `src/sound.js`: playback; the soundtrack is the clock, and paper flaps are played live as cut-outs spring up.
-- `src/timeline.js`: generated; do not edit.
-
-## Rebuilding the soundtrack
-
-The narration is synthesised locally with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx)
-(a blend of two British male voices); Chinese names are respelt in `tools/narrate.py` so it says them close to Mandarin.
-The score (guzheng, erhu, dizi, xiao, guqin, pipa, bronze bells, gong, sheng, and later piano and synths, on one
-pentatonic theme first heard on the bone flute), the ambience and the effects are synthesised in Python, kept
-below about 3 kHz so nothing is piercing.
-
-```sh
-python3 -m venv /home/user/tts/venv
-/home/user/tts/venv/bin/pip install kokoro-onnx soundfile numpy scipy
-# put kokoro-v1.0.onnx and voices-v1.0.bin (release model-files-v1.0) in /home/user/tts
-/home/user/tts/venv/bin/python tools/narrate.py film/film.json     # times the narration, writes src/timeline.js
-/home/user/tts/venv/bin/python tools/build_audio.py film/film.json # builds assets/audio/film.mp3
-```
-
-## Checking frames
-
-```sh
-node tools/sheet.mjs NAME "30,86.5,150.8" 1440x810 3   # contact sheet -> shots/sheet_NAME.jpg
-node tools/crop.mjs out.png 87 1440x810 1 520,250,420,300
-node tools/play.mjs 390x844 8                           # real-time playback test
-```
-
-## Made with the `paperfilm` skill
-
-This film was made with the `paperfilm` skill and the "Everything So Far" engine from the
-`raycoding1-collab/Globe` repository; the engine files here are that template, extended for China.
+- `film/film.json`: the script: the five Hungarian cards, the brand lines, and the time of every event.
+- `src/film.js`: the reel: camera, light of each stage, the cards, the knot close-up, the oil and aura,
+  the waves of colour, the lotus pull-back and the title.
+- `src/kinds_aura.js`: its cut-outs: Budapest blocks, the Kőbánya church spire, the yellow tram and its
+  wire, umbrellas, her and her tower of the week, the house with the warm window, the room, the table
+  with the client and the practitioner, flowers.
+- The rest is the paperfilm engine (`src/engine.js`, `paper.js`, `people.js`, the template's cut-out
+  libraries) with two small additions for upright films: a film may set its own horizon and the size
+  and place of the planet when it is seen whole.
+- Sound: synthesised in Python (`tools/build_audio.py`), no voice: a felt piano, a soft cimbalom, pads,
+  a singing bowl, a beat heard through a wall in the rain and open once the colour returns; rain, the
+  tram and its bell, the room, every paper flap and footstep of the picture. Kept under about 2.5 kHz.
+- Font: Fraunces (SIL Open Font License), in `assets/fonts/`.

@@ -48,7 +48,7 @@ const cam = monotone([
   [17.3, A_ROOM + 8.6], [20.4, A_ROOM + 12.4], [25.5, A_ROOM + 13.6], [40, A_ROOM + 20],
 ]);
 // how close the camera is: close on her for the hook, back a little for the house, close in the room
-const zoomK = track([[0, 2.55], [3.4, 2.4], [4.8, 1.86], [6.2, 1.74], [7.6, 1.95], [8.05, 2.1], [8.75, 3.35], [12.9, 3.5], [13.5, 3.6], [14.3, 3.0], [15.4, 1.85], [16.8, 1.8], [17.4, 2.2], [20.4, 2.05]]);
+const zoomK = track([[0, 3.05], [1.5, 2.5], [3.4, 2.4], [4.8, 1.86], [6.2, 1.74], [7.6, 1.95], [8.05, 2.1], [8.75, 3.35], [12.9, 3.5], [13.5, 3.6], [14.3, 3.0], [15.4, 1.85], [16.8, 1.8], [17.4, 2.2], [20.4, 2.05]]);
 
 // ------------------------------------------------- paint and shape of land --
 // The grey street, the house, the room, and the world beyond that gets its colour back.
@@ -247,7 +247,7 @@ function knotSprites(st) {
   for (const s of [KNOT_FX.back, KNOT_FX.hand]) if (s) { release(s.img); release(s.shadow); }
   const sc = st.W / 600, cw = 500, ch = 380, skin = '#d2a07a';
   const sh = new BlurSheet('knot-back', [-cw / 2, -ch / 2, cw / 2, ch / 2], sc, { pad: 16 }, 0);
-  sh.piece([[-cw / 2, -ch / 2 + 6], [0, -ch / 2], [cw / 2, -ch / 2 + 4], [cw / 2 - 3, ch / 2], [0, ch / 2 - 2], [-cw / 2 + 2, ch / 2]], '#efe4cf', { round: 6, rough: 1.2, seg: 70, lift: 3, thick: 2.4 });
+  sh.piece([[-cw / 2, -ch / 2 + 6], [0, -ch / 2], [cw / 2, -ch / 2 + 4], [cw / 2 - 3, ch / 2], [0, ch / 2 - 2], [-cw / 2 + 2, ch / 2]], '#efe4cf', { round: 6, rough: 1.2, seg: 70, lift: 3, blotch: 0.35, grain: 0.4, thick: 2.4 });
   // the upper back from above: neck, the slope of the shoulders, shoulder blades, the line of the spine
   sh.piece([[-34, -ch / 2 + 22], [34, -ch / 2 + 22], [40, -112], [150, -86], [208, -40], [222, 30], [214, ch / 2 - 20], [-214, ch / 2 - 20], [-222, 30], [-208, -40], [-150, -86], [-40, -112]], skin, { round: 22, rough: 1.4, seg: 30, lift: 2.6, paint: (g) => {
     const gr = g.createRadialGradient(0, -40, 20, 0, -20, 260); gr.addColorStop(0, 'rgba(255,230,200,.25)'); gr.addColorStop(1, 'rgba(120,70,40,.3)'); g.fillStyle = gr; g.fillRect(-cw / 2, -ch / 2, cw, ch);
@@ -283,11 +283,12 @@ function knotCard(g, st, t) {
   tangle(g, lerp(0, 96, smooth(u)), 0, 46, 380 * smooth(u), 1 - u, t, 7, 7, 1);
   g.restore();
   // the hands: pressing, small circles; as it gives they slide out along the thread and lift away
-  const ease = smooth(clamp((u - 0.15) / 0.85)), lift = sramp(t, T.untie[1] - 0.4, T.untie[1] + 0.4), w = t * 3.4;
+  const ease = smooth(clamp((u - 0.15) / 0.85)), lift = sramp(t, T.untie[1] - 0.5, T.untie[1] + 0.1), w = t * 3.4; // the hands are gone before the card drops away
   for (const [side, ph] of [[-1, 0], [1, 3]]) {
     const press = 1 - 0.03 * Math.max(0, Math.sin(w + ph)) * (1 - ease);
-    const hx = kx + side * (50 + ease * 120) + Math.cos(w + ph) * 6 * (1 - ease), hy = ky - 34 + Math.sin(w + ph) * 4 * (1 - ease) - lift * 30;
-    g.save(); g.translate(hx, hy); g.rotate((180 - side * (22 - ease * 12)) * DEG); g.scale(press * (1 + lift * 0.12), press * (1 + lift * 0.12)); g.globalAlpha = 1 - lift;
+    const hx = kx + side * (50 + ease * 70) + Math.cos(w + ph) * 6 * (1 - ease), hy = ky - 34 + Math.sin(w + ph) * 4 * (1 - ease) - lift * 30;
+    // both arms come from one body above: leaning in, never crossing
+    g.save(); g.translate(hx, hy); g.rotate((180 + side * (7 - ease * 4)) * DEG); g.scale(press * (1 + lift * 0.12), press * (1 + lift * 0.12)); g.globalAlpha = 1 - lift;
     put(g, F.hand, 0.3 + lift * 0.3, 4 + lift * 10, 6 + lift * 14);
     g.restore();
   }
@@ -430,7 +431,7 @@ function lotus(g, st, t, front) {
   const list = front ? [[-74, 0.78], [74, 0.78], [-46, 0.7], [46, 0.7]] : PETALS;
   list.forEach(([ang, len], i) => {
     const order = front ? 6 + i : Math.abs(ang) / 19.5, tt = t - T.lotus - order * 0.08;
-    const open = clamp(spring(tt, 7, 0.5), 0, 1.25), a = ang * open;
+    const open = clamp(spring(tt, 7, 0.5), 0, 1.25), a = ang * (front ? lerp(0.6, 1, Math.min(1, open)) + Math.max(0, open - 1) * 0.4 : open);
     if (tt < -0.05) return;
     g.save(); g.translate(cx, base); g.rotate(a * DEG); const s = (front ? Rp * 1.05 / 170 : Rp / 300) * len * lerp(0.55, 1, clamp(open));
     g.scale(s, s); g.globalAlpha = k0;
@@ -480,7 +481,7 @@ function ctaSprite(st) {
   const sc = st.W / 600, w = 440, h = 150;
   const sh = new BlurSheet('cta', [-w / 2, -h / 2, w / 2, h / 2], sc, { pad: 14 }, 0);
   const fit = (g, font, size, text, max) => { let fs = size; g.font = font(fs); while (g.measureText(text).width > max && fs > 12) { fs -= 1; g.font = font(fs); } };
-  sh.piece([[-w / 2, -h / 2 + 3], [0, -h / 2 - 1], [w / 2, -h / 2 + 2], [w / 2 - 2, h / 2 - 2], [0, h / 2 + 1], [-w / 2 + 2, h / 2]], '#f6efe2', { round: 4, rough: 1.1, seg: 70, lift: 3, thick: 2.4, paint: (g) => {
+  sh.piece([[-w / 2, -h / 2 + 3], [0, -h / 2 - 1], [w / 2, -h / 2 + 2], [w / 2 - 2, h / 2 - 2], [0, h / 2 + 1], [-w / 2 + 2, h / 2]], '#f6efe2', { round: 4, rough: 1.1, seg: 70, lift: 3, blotch: 0.35, grain: 0.4, thick: 2.4, paint: (g) => {
     g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillStyle = '#4a3e36'; fit(g, (f) => `italic 400 ${f}px Fraunces`, 26, BRAND.line, w - 50); g.fillText(BRAND.line, 0, -h / 2 + 30);
     g.fillStyle = '#4a3e36'; fit(g, (f) => `400 ${f}px Fraunces`, 23, BRAND.where, w - 50); g.fillText(BRAND.where, 0, -2);
@@ -584,7 +585,7 @@ function cardSprite(i, st) {
   if (CARD_CACHE.has(key)) return CARD_CACHE.get(key);
   const text = CARDS[i].text, s = st.W / 560, w = 470, h = 108;
   const sh = new BlurSheet('card' + i, [-w / 2, -h / 2, w / 2, h / 2], s, { pad: 14 }, 0);
-  sh.piece([[-w / 2, -h / 2 + 3], [-w / 4, -h / 2 - 1], [w / 4, -h / 2 + 2], [w / 2, -h / 2], [w / 2 - 2, h / 2 - 2], [w / 5, h / 2 + 1], [-w / 3, h / 2 - 1], [-w / 2 + 2, h / 2]], '#f3ead8', { round: 3, rough: 1.2, seg: 60, lift: 3, thick: 2.2, paint: (g) => {
+  sh.piece([[-w / 2, -h / 2 + 3], [-w / 4, -h / 2 - 1], [w / 4, -h / 2 + 2], [w / 2, -h / 2], [w / 2 - 2, h / 2 - 2], [w / 5, h / 2 + 1], [-w / 3, h / 2 - 1], [-w / 2 + 2, h / 2]], '#f3ead8', { round: 3, rough: 1.2, seg: 60, lift: 3, blotch: 0.35, grain: 0.4, thick: 2.2, paint: (g) => {
     g.fillStyle = '#2e241e'; g.textAlign = 'center'; g.textBaseline = 'middle';
     let fs = 52; g.font = `italic 460 ${fs}px Fraunces`; while (g.measureText(text).width > w - 56 && fs > 30) { fs -= 2; g.font = `italic 460 ${fs}px Fraunces`; }
     g.fillText(text, 0, 2);
@@ -626,7 +627,7 @@ function groundFx(g, st, t, S) {
 }
 
 // rain: thin slanting strokes of cellophane-grey paper, and splashes along the street
-const WX = [['rain', -5, ev('rainStop', 6.4) + 0.5], ['petals', 17.6, 26]];
+const WX = [['rain', -5, ev('rainStop', 6.4) + 0.5], ['petals', 17.6, ev('pull', 20.4) + 1.2]]; // no petals over the title: they read as accents
 function weather(g, st, t) {
   const { W, H } = st, u = st.eu, cx = st.cx, cy = st.ecy, Rr = st.eR, fr = (x) => x - Math.floor(x);
   const pu = Math.max(u, Math.min(W, H) / 820);
@@ -689,7 +690,16 @@ function soundEvents(stage) {
     const t0 = e.tPop; if (t0 > 0 && t0 < DURATION) flaps.push({ t: +t0.toFixed(3), layer: e.layer, loud, a: e.a });
     const f = e.foldAt ?? e.to; if (f !== undefined && f > 0 && f < DURATION) flaps.push({ t: +f.toFixed(3), layer: e.layer, loud: loud * 0.8, a: e.a, fold: 1 });
   }
-  return { flaps, cam: Array.from({ length: Math.ceil(DURATION * 10) }, (_, i) => +cam(i / 10).toFixed(2)) };
+  const steps = [];
+  for (const e of E) {
+    if (e.kind !== 'au_her') continue;
+    let last = null;
+    for (let t = Math.max(0, e.from ?? 0); t < Math.min(DURATION, e.to ?? DURATION); t += 1 / 240) {
+      const w = e.act(t).walk; if (w === undefined) { last = null; continue; }
+      const k = Math.floor(w / Math.PI); if (last !== null && k !== last) steps.push({ t: +t.toFixed(3), a: e.a + e.move(t), light: e.from ? 1 : 0 }); last = k;
+    }
+  }
+  return { flaps, steps, cam: Array.from({ length: Math.ceil(DURATION * 20) }, (_, i) => +cam(i / 20).toFixed(3)) };
 }
 
 export const film = { horizon: (aspect) => lerp(0.735, 0.68, sramp(aspect, 0.6, 1.5)), pullFit: (st) => pullR(st), pullY: 0.385, titleT: 2, keepFull: () => false, duration: DURATION, cam, state, entities: E, byLayer, profile, ground, clouds, bake, shadowDx, body: [126, 98, 72], soundEvents, fx: { sky, ground: groundFx, over: overFx } };

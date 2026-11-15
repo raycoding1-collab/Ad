@@ -2,3 +2,4 @@ node_modules/
 shots/
 .cache/
 out/*.png
+out/draft*.mp4
