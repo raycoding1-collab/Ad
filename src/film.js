@@ -208,25 +208,27 @@ const stroke = (t) => { // which long stroke is under way, and how far along: { 
   add('au_room', 'main', A_ROOM, { z: 0.5, wide: 12, loud: 0.8, warm: () => 1, day: (t) => sramp(t, T.waves[0] + 0.3, T.waves[0] + 1.2) });
   add('au_couch', 'main', A_ROOM, {
     z: 1, wide: 8, loud: 0.6,
-    client: (t) => 1 - sramp(t, T.exit - 0.45, T.exit - 0.1),
+    client: (t) => 1 - sramp(t, T.exit - 0.2, T.exit + 0.05),
     knot: (t) => ({ k: 1 - untieK(t), show: 1 - sramp(t, T.untie[1] + 0.2, T.untie[1] + 0.9) }),
+    // She stands still on the near side of the table, by the client's hips, facing her shoulders, feet planted.
+    // Every movement comes from her arms and her weight, never from sliding along the table.
     pract: (t) => {
-      // the stroke: she walks along the table with it, forearms gliding from the shoulders down the back
-      const st = stroke(t);
-      if (st) {
-        const out = st.s < 0.72, s = out ? smooth(st.s / 0.72) : 1 - smooth((st.s - 0.72) / 0.28);
-        const px = lerp(-40, -6, s), lift = out ? 0 : Math.sin(Math.PI * (st.s - 0.72) / 0.28) * 6;
-        return { px, lean: 22 + 10 * Math.sin(Math.PI * clamp(st.s / 0.72)), head: 18, hands: [[lerp(-30, 10, s), -86 - lift], [lerp(-38, 2, s), -85 - lift]] };
-      }
-      if (t > T.oil - 0.3 && t < T.waves[0] - 0.45) { // cupped hands for the oil, then warming it between the palms
-        const rub = sramp(t, T.drop + 0.15, T.drop + 0.3) * Math.sin(t * 22) * 2.2;
-        const k = sramp(t, T.oil - 0.3, T.oil + 0.1) * (1 - sramp(t, T.waves[0] - 0.75, T.waves[0] - 0.45));
-        return { px: -34, lean: lerp(18, 6, k), head: lerp(18, 28, k), hands: [[lerp(-30, -32 + rub, k), lerp(-86, -100, k)], [lerp(-38, -36 - rub, k), lerp(-85, -99, k)]] };
-      }
-      if (t > T.exit - 0.5) { const k = sramp(t, T.exit - 0.5, T.exit); return { px: lerp(-6, -24, k), lean: lerp(22, 2, k), head: 4, hands: [[lerp(10, -22, k), lerp(-86, -60, k)], [lerp(2, -34, k), lerp(-85, -60, k)]] }; }
-      // kneading the knot: small slow circles, then easing off as it gives
-      const w = t * 3.4, a = 1 - untieK(t) * 0.6;
-      return { px: -40, lean: 14, head: 22, hands: [[-22 + Math.cos(w) * 3 * a, -86 + Math.sin(w) * 1.6 * a], [-32 + Math.cos(w + 3) * 3 * a, -85 + Math.sin(w + 3) * 1.6 * a]] };
+      const px = 18, face = -1, mixP = (a, b, k) => ({ lean: lerp(a.lean, b.lean, k), head: lerp(a.head, b.head, k), hands: a.hands.map((h, i) => [lerp(h[0], b.hands[i][0], k), lerp(h[1], b.hands[i][1], k)]) });
+      // kneading the knot: slow, alternating presses, her body rocking gently into each one; softer as it gives
+      const u = untieK(t), amp = 1 - 0.55 * u, w = t * 4.2, pA = (1 - Math.cos(w)) / 2, pB = (1 - Math.cos(w + Math.PI)) / 2;
+      let P = { lean: 17 + 2 * Math.sin(w) * amp, head: 24, hands: [[-19 - 3 * u, -71.5 + pA * 2.2 * amp], [-27 - 3 * u, -71 + pB * 2.2 * amp]] };
+      // the oil: hands cupped in front of her, then the palms rubbed together to warm it
+      const rub = sramp(t, T.drop + 0.15, T.drop + 0.35) * Math.sin(t * 15) * 1.6;
+      P = mixP(P, { lean: 4, head: 30, hands: [[-6 + rub, -82], [-9 - rub, -81.5]] }, sramp(t, T.oil - 0.35, T.oil + 0.15));
+      // lomi lomi: one long flowing movement, shoulders to lower back, back up, and down again; hands never leave her
+      const W0 = T.waves[0] - 0.45, W2 = T.waves[2] + 0.55;
+      let pos = 0;
+      if (t > W0) { const q = clamp((t - W0) / (W2 - W0)) * 3, i = Math.min(2, Math.floor(q)), f = smooth(q - i); pos = i % 2 ? 1 - f : f; }
+      const S = { lean: lerp(24, 10, pos), head: lerp(24, 18, pos), hands: [[lerp(-32, -14, pos), -71 + Math.sin(pos * Math.PI) * 0.8], [lerp(-25, -8, pos), -70.5 + Math.sin(pos * Math.PI) * 0.8]] };
+      P = mixP(P, S, sramp(t, W0 - 0.35, W0));
+      // done: she lifts her hands and straightens
+      P = mixP(P, { lean: 1, head: 6, hands: [[px - 4, -50], [px + 2, -50]] }, sramp(t, T.exit - 0.35, T.exit + 0.15));
+      return { px, face, ...P };
     },
   });
   hook({
@@ -258,7 +260,7 @@ function knotSprites(st) {
   sh.piece([[-cw / 2 + 6, ch / 2 - 40], [cw / 2 - 6, ch / 2 - 46], [cw / 2 - 4, ch / 2 - 4], [-cw / 2 + 4, ch / 2 - 2]], '#f6f1e6', { round: 4, lift: 2.2, paint: (g) => { g.strokeStyle = 'rgba(150,140,120,.3)'; g.lineWidth = 1; for (let x = -cw / 2 + 20; x < cw / 2; x += 18) { g.beginPath(); g.moveTo(x, ch / 2 - 40); g.lineTo(x + 4, ch / 2); g.stroke(); } } });
   KNOT_FX.back = { ...sh.finish({ shadowBlur: 10 }), cw, ch, sc };
   // a hand, palm down, fingers up
-  const hs = new BlurSheet('knot-hand', [-48, -110, 40, 200], sc, { pad: 10 }, 0), hc = '#a8724c';
+  const hs = new BlurSheet('knot-hand', [-48, -110, 40, 200], sc, { pad: 10 }, 0), hc = '#e2b48f';
   hs.piece([[-30, 200], [30, 200], [27, 30], [-27, 30]], '#d8cfbd', { round: 6, lift: 0, paint: (g) => { g.strokeStyle = 'rgba(150,130,100,.35)'; g.lineWidth = 1.4; for (let x = -18; x < 20; x += 12) { g.beginPath(); g.moveTo(x, 40); g.lineTo(x + 3, 200); g.stroke(); } } });
   hs.piece([[-24, 34], [24, 34], [27, -20], [-27, -20]], hc, { round: 12, lift: 1.6 });
   [[-19, -26, -84, 8.6], [-6.5, -26, -100, 9], [6.5, -26, -96, 9], [19, -24, -74, 8]].forEach(([x, y0, y1, w]) => hs.piece([[x - w / 2, y0], [x + w / 2, y0], [x + w / 2 - 0.5, y1 + 4], [x, y1], [x - w / 2 + 0.5, y1 + 4]], hc, { round: 4.2, lift: 1.4, paint: (g) => { g.fillStyle = 'rgba(255,220,200,.35)'; g.beginPath(); g.ellipse(x, y1 + 6, w * 0.32, 4, 0, 0, 7); g.fill(); } }));
@@ -302,7 +304,7 @@ hook({ over(g, st, t) { knotCard(g, st, t); } });
 hook({
   over(g, st, t) {
     if (t < T.oil - 0.1 || t > T.drop + 1.8) return;
-    const { W, H } = st, [hx, hy] = st.place('main', A_ROOM + (-34 + 0) / 17.45, 100, t), pu = Math.max(st.eu, Math.min(W, H) / 820);
+    const { W, H } = st, [hx, hy] = st.place('main', A_ROOM + (-7.5) / 17.45, 84, t), pu = Math.max(st.eu, Math.min(W, H) / 820);
     // the drop: a bead of amber light, falling
     if (t < T.drop) {
       const k = clamp((t - T.oil) / (T.drop - T.oil)), y = lerp(-H * 0.04, hy, k * k), s = 6 * pu;
@@ -330,21 +332,21 @@ hook({
     const COL = [['#e9b26a', '#f6d7a2'], ['#e48f9a', '#f6c4c8'], ['#a993cc', '#d8cdea']];
     T.waves.forEach((tw, i) => {
       const age = t - tw; if (age < 0 || age > 9) return;
-      const front = A_EDGE - 1.5 + age * WAVE, len = 9, h0 = 64;
-      if (front - len > G.c + st.visE + 6 || front < G.c - st.visE - 6) return;
-      const fade = 1 - sramp(age, 6, 9);
+      const front = A_EDGE - 1.5 + age * WAVE, len = 9, h0 = 64, back = Math.max(front - len, A_EDGE + 0.2); // it starts at the room's edge, never inside it
+      if (front <= back + 0.05 || back > G.c + st.visE + 6 || front < G.c - st.visE - 6) return;
+      const fade = 1 - sramp(age, 6, 9), hOf = (a, dh) => (h0 + dh) * Math.sin(Math.PI * Math.min(1, (a - (front - len)) / len * 1.15)) ** 1.5;
       for (const [lay, dh, col, al] of [[0, 0, COL[i][0], 0.9], [1, -16, COL[i][1], 0.95], [2, -34, '#fbf4ea', 0.9]]) {
         g.fillStyle = col; g.globalAlpha = al * fade; g.beginPath();
         const steps = 40;
-        for (let j = 0; j <= steps; j++) { const q = j / steps, a = front - len + q * len, hh = (h0 + dh) * Math.sin(Math.PI * Math.min(1, q * 1.15)) ** 1.5 * (0.85 + 0.15 * Math.sin(q * 9 - t * 6)); const [x, y] = G.rad(a, hh); j ? g.lineTo(x, y) : g.moveTo(x, y); }
+        for (let j = 0; j <= steps; j++) { const a = back + (j / steps) * (front - back), q = (a - (front - len)) / len, hh = hOf(a, dh) * (0.85 + 0.15 * Math.sin(q * 9 - t * 6)) * sramp(a, A_EDGE + 0.2, A_EDGE + 1.2); const [x, y] = G.rad(a, hh); j ? g.lineTo(x, y) : g.moveTo(x, y); }
         // the curl at the front
         const [cx, cy] = G.rad(front + 0.2, (h0 + dh) * 0.55), rr = (h0 + dh) * 0.45;
         g.arc(cx, cy, rr, -Math.PI * 0.9 + (front - G.c) * DEG, Math.PI * 0.5 + (front - G.c) * DEG);
-        for (let j = steps; j >= 0; j--) { const a = front - len + (j / steps) * len, [x, y] = G.rad(a, -4); g.lineTo(x, y); }
+        for (let j = steps; j >= 0; j--) { const a = back + (j / steps) * (front - back), [x, y] = G.rad(a, -4); g.lineTo(x, y); }
         g.closePath(); g.fill();
       }
       g.globalAlpha = 0.8 * fade; g.strokeStyle = 'rgba(255,250,240,.95)'; g.lineWidth = 3.2; g.beginPath();
-      for (let j = 0; j <= 30; j++) { const q = j / 30, a = front - len * 0.9 + q * len * 0.9, hh = (h0 - 4) * Math.sin(Math.PI * Math.min(1, q * 1.1)) ** 1.5; const [x, y] = G.rad(a, hh); j ? g.lineTo(x, y) : g.moveTo(x, y); }
+      for (let j = 0; j <= 30; j++) { const a = back + (j / 30) * (front - back), hh = hOf(a, -4) * sramp(a, A_EDGE + 0.2, A_EDGE + 1.2); const [x, y] = G.rad(a, hh); j ? g.lineTo(x, y) : g.moveTo(x, y); }
       g.stroke(); g.globalAlpha = 1;
     });
   },

@@ -43,7 +43,7 @@ Object.assign(LOOKS, {
   auBrollyA: { skin: 5, top: 'coat', topCol: '#4c505a', legs: 'trousers', legCol: '#2e2e34', hair: 'short', hairCol: '#2a2420', pose: 'walk' },
   auBrollyB: { skin: 6, top: 'coat', topCol: '#5e4c46', legs: 'trousers', legCol: '#34303a', hair: 'long', hairCol: '#5a3a26', pose: 'walk' },
   auBrollyC: { skin: 2, top: 'coat', topCol: '#3e4a48', legs: 'trousers', legCol: '#2a2a2e', hair: 'short', hairCol: '#1a1412', pose: 'walk' },
-  auPract: { skin: 1, top: 'tunic', topCol: '#d8cfbd', legs: 'trousers', legCol: '#6e6658', hair: 'short', hairCol: '#2a1c15', pose: 'stand', shoe: '#4a3a2e' },
+  auPract: { skin: 6, top: 'tunic', topCol: '#d8cfbd', legs: 'trousers', legCol: '#6e6658', hair: 'long', hairCol: '#d4ae66', pose: 'stand', shoe: '#4a3a2e' }, // a woman in her forties, light skin, long blonde hair
 });
 
 // the arm transforms of drawPerson, so things can be held in a hand or drawn on it
@@ -425,48 +425,48 @@ KINDS.au_room = {
 KINDS.au_couch = {
   bake(mk) {
     const P = { pr: KINDS.person.bake(mk, 'auPract') }, skin = '#c69a74', skinD = '#b0845f';
-    P.table = mk('au-table', [-100, -74, 90, 6])
-      .piece(rect(-62, 2, -56, -54), '#7a5236', { round: 0.6 }).piece(rect(56, 2, 62, -54), '#7a5236', { round: 0.6 }).piece(rect(-62, -22, 62, -26), '#6a4a30', { round: 0.4, lift: 1 })
-      .piece(rect(-76, -54, 76, -63), '#d8ccb4', { round: 3, lift: 1.6, paint: (g) => { g.fillStyle = 'rgba(120,100,80,.25)'; g.fillRect(-76, -56, 152, 2); } })
-      .piece([[-78, -63], [78, -63], [80, -52], [74, -46], [-74, -46], [-80, -52]], '#ebe1cc', { round: 3, lift: 1.4, paint: (g) => { g.strokeStyle = 'rgba(150,130,100,.3)'; g.lineWidth = 0.7; for (let x = -70; x < 76; x += 16) { g.beginPath(); g.moveTo(x, -50); g.lineTo(x + 4, -47); g.stroke(); } } })
-      .piece([[-94, -58], [-80, -58], [-80, -66], [-94, -66]], '#d8ccb4', { round: 3, lift: 1.4 }).piece(rect(-90, -58, -84, -40), '#7a5236', { round: 0.5, lift: 1.2 })
+    // a massage table at the height of her hips, as a real one is
+    P.table = mk('au-table', [-100, -60, 90, 6])
+      .piece(rect(-62, 2, -56, -39), '#7a5236', { round: 0.6 }).piece(rect(56, 2, 62, -39), '#7a5236', { round: 0.6 }).piece(rect(-62, -14, 62, -18), '#6a4a30', { round: 0.4, lift: 1 })
+      .piece(rect(-76, -39, 76, -48), '#d8ccb4', { round: 3, lift: 1.6, paint: (g) => { g.fillStyle = 'rgba(120,100,80,.25)'; g.fillRect(-76, -41, 152, 2); } })
+      .piece([[-78, -48], [78, -48], [80, -37], [74, -31], [-74, -31], [-80, -37]], '#ebe1cc', { round: 3, lift: 1.4, paint: (g) => { g.strokeStyle = 'rgba(150,130,100,.3)'; g.lineWidth = 0.7; for (let x = -70; x < 76; x += 16) { g.beginPath(); g.moveTo(x, -35); g.lineTo(x + 4, -32); g.stroke(); } } })
+      .piece([[-94, -43], [-80, -43], [-80, -51], [-94, -51]], '#d8ccb4', { round: 3, lift: 1.4 }).piece(rect(-90, -43, -84, -27), '#7a5236', { round: 0.5, lift: 1.2 })
       .finish({ shadowBlur: 5 });
     P.bolster = mk('au-bolster', [-14, -10, 14, 10], { pad: 4 }).piece(ellipse(0, 0, 13, 8, 14), '#b9cad6', { round: 3, paint: (g) => { g.strokeStyle = 'rgba(80,100,120,.3)'; g.lineWidth = 0.7; for (const x of [-8, 0, 8]) { g.beginPath(); g.moveTo(x, -8); g.lineTo(x, 8); g.stroke(); } } }).finish({ shadowBlur: 2 });
     // her: legs under the towel to the bolster, the bare back, an arm along her side, her head in the face cradle
     P.legs = mk('au-cl-legs', [-6, -20, 82, 4], { pad: 4 }).piece([[0, 0], [70, 0], [80, -6], [78, -12], [66, -12], [40, -14], [0, -16]], skinD, { ...lite, round: 4 }).finish({ shadowBlur: 3 });
-    P.back = mk('au-cl-back', [-56, -26, 12, 4], { pad: 4 }).piece([[-52, 0], [6, 0], [8, -12], [0, -19], [-14, -17], [-30, -21], [-44, -22], [-52, -18], [-55, -8]], skin, { ...lite, round: 6, paint: (g) => { g.strokeStyle = 'rgba(140,90,60,.25)'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(-50, -19); g.quadraticCurveTo(-24, -24, 4, -16); g.stroke(); } }).finish({ shadowBlur: 3 });
+    P.back = mk('au-cl-back', [-64, -26, 12, 4], { pad: 4 }).piece([[-52, 0], [6, 0], [8, -12], [0, -19], [-14, -17], [-30, -21], [-44, -22], [-52, -18], [-58, -14], [-62, -10], [-62, -4], [-56, -1]], skin, { ...lite, round: 6, paint: (g) => { g.strokeStyle = 'rgba(140,90,60,.25)'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(-50, -19); g.quadraticCurveTo(-24, -24, 4, -16); g.stroke(); } }).finish({ shadowBlur: 3 });
     P.arm = mk('au-cl-arm', [-50, -8, 2, 6], { pad: 4 }).piece([[-46, 0], [-2, 0], [0, -5], [-46, -6]], skinD, { ...lite, round: 3 }).finish({ shadowBlur: 2 });
     P.towel = mk('au-cl-towel', [-6, -26, 70, 4], { pad: 4 }).piece([[-4, 2], [66, 2], [68, -10], [56, -16], [30, -20], [4, -24], [-4, -20]], '#f6f1e6', { round: 4, lift: 1.4, paint: (g) => { g.strokeStyle = 'rgba(150,140,120,.35)'; g.lineWidth = 0.8; for (let x = 6; x < 64; x += 9) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 3, -16); g.stroke(); } } }).finish({ shadowBlur: 3 });
     P.head = mk('au-cl-head', [-24, -22, 4, 6], { pad: 4 }).piece(ellipse(-10, -9, 11, 10, 14), skin, { ...lite, round: 4 }).piece([[-22, -6], [-20, -16], [-12, -21], [-2, -18], [2, -10], [-2, -2], [-12, 0], [-21, 2]], '#3a2418', { ...lite, round: 3, rim: 0.2 }).finish({ shadowBlur: 3 });
     return P;
   },
   draw(g, P, t, e, env) {
-    // the practitioner stands behind the table, so the table and her body hide their lower half
-    // the practitioner, at the head of the table
-    const o = e.pract(t), px = o.px ?? -56;
-    g.save(); g.translate(px, 0);
-    const hip = P.pr.hip, L = o.lean * DEG, toT = (x, y) => { const dx = x - px, dy = y + hip; return [dx * Math.cos(L) + dy * Math.sin(L), -dx * Math.sin(L) + dy * Math.cos(L)]; };
-    const [f0, f1] = toT(...o.hands[0]), [b0, b1] = toT(...o.hands[1]);
-    o.front = reachDeg(f0 - 2, f1 + 34.5, 1); o.back = reachDeg(b0 + 3, b1 + 35, 1);
-    drawPerson(g, P.pr, t, e, env, o);
-    g.restore();
     const sh = env.sh, cl = e.client ? e.client(t) : 1;
     g.save(); g.translate(10, 0);
     put(g, P.table, sh, 3, 4);
     if (cl > 0.01) {
-      g.save(); g.translate(0, -63); g.scale(1, cl);
+      g.save(); g.translate(0, -48); g.scale(1, cl);
       g.save(); g.translate(56, -6); put(g, P.bolster, sh * 0.5, 1, 2); g.restore();
       const br = Math.sin(t * 1.6) * 0.4; // breathing, slow
       g.save(); g.translate(-8, -1 + br * 0.2); put(g, P.legs, sh * 0.5, 1, 2); g.restore();
+      g.save(); g.translate(-50, -4); put(g, P.head, sh * 0.5, 1, 2); g.restore();   // head first, tucked into the shoulders
       g.save(); g.translate(0, br * 0.3); g.scale(1, 1 + br * 0.03); put(g, P.back, sh * 0.5, 1, 2); g.restore();
       g.save(); g.translate(-4, -2); put(g, P.towel, sh * 0.5, 1, 2); g.restore();
       g.save(); g.translate(-4, -1); put(g, P.arm, sh * 0.4, 1, 2); g.restore();
-      g.save(); g.translate(-56, -4); put(g, P.head, sh * 0.5, 1, 2); g.restore();
       // the knot on her upper back
       const kk = e.knot ? e.knot(t) : 1;
       if (kk.show > 0.01) tangle(g, -36, -21 + br * 0.3, 5.4, 46, kk.k, t, 7, 1.2, kk.show);
       g.restore();
     }
+    g.restore();
+    // the practitioner stands on the near side of the table, by her hips, leaning over her back
+    const o = e.pract(t), px = o.px ?? -56, face = o.face ?? 1;
+    g.save(); g.translate(px, 0); if (face < 0) g.scale(-1, 1);
+    const hip = P.pr.hip, L = o.lean * DEG, toT = (x, y) => { const dx = (x - px) * face, dy = y + hip; return [dx * Math.cos(L) + dy * Math.sin(L), -dx * Math.sin(L) + dy * Math.cos(L)]; };
+    const [f0, f1] = toT(...o.hands[0]), [b0, b1] = toT(...o.hands[1]);
+    const bend = o.bend ?? 1; o.front = reachDeg(f0 - 2, f1 + 34.5, bend); o.back = reachDeg(b0 + 3, b1 + 35, bend);
+    drawPerson(g, P.pr, t, e, env, o);
     g.restore();
   },
 };
